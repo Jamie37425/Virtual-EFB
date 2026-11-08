@@ -38,23 +38,26 @@ Virtual EFB runs as a **standalone, full-screen Android tablet application** pai
 
 ## Quick Start Guide
 
-### Step 1: Install on Android Tablet
-1. Download **`EFB.apk`** from the [Releases](../../releases) tab (or from the companion server on your PC).
-2. On your tablet, open the downloaded file using **Package Installer**.
+### Step 1: Set Up the PC Sync Server (For Checklists)
+1. Download this project onto your simulator PC:
+   * Click the green **Code** button at the top of the repository and select **[Download ZIP](../../archive/refs/heads/main.zip)** (or download the **Source code (zip)** from the [Releases](../../releases) tab).
+2. Extract the `.zip` archive anywhere on your PC (e.g., `C:\Virtual-EFB` or in your Documents folder).
+3. Drop your aircraft `.pdf` checklist files into the extracted `checklists/` folder (you can also organize them in subfolders like `checklists/A320/normal.pdf`).
+4. Double-click **`Start-EFB.bat`**:
+   * A clean PC status dashboard will open in your browser displaying your PC's local Wi-Fi IP address (e.g., `192.168.1.50`).
+
+### Step 2: Install the App on your Android Tablet
+1. Download **`EFB.apk`** from the [Releases](../../releases) tab (or click the download button directly on your PC's status screen from your tablet at `http://<YOUR-PC-IP>/EFB.apk`).
+2. On your tablet, open the downloaded file using Android's **Package Installer**.
 3. If prompted by Android, enable **Allow from this source** and tap **Install** (or tap *More details → Install anyway* if prompted by Play Protect).
 4. Launch **EFB** from your home screen.
 
-### Step 2: Start the PC Sync Server (For Checklists)
-1. On your simulator PC, double-click **`Start-EFB.bat`** (or run `powershell -ExecutionPolicy Bypass -File tools\serve.ps1`).
-2. Your browser will display the **PC Companion Status Page** with your PC's local IP address (e.g., `192.168.1.50`).
-3. Drop your aircraft `.pdf` checklist files into the `Virtual-EFB\checklists\` folder on your PC.
-
-### Step 3: Connect Tablet to PC
+### Step 3: Connect Tablet to PC (One-Time Setup)
 1. In the **EFB** app on your tablet, tap ⚙ **Settings** on the top bar.
-2. Under **Simulator PC Connection**, enter the IP address shown on your PC screen and tap **CONNECT**.
-3. Your tablet will immediately connect and sync your checklist PDFs over your home Wi-Fi!
+2. Under **Simulator PC Connection**, enter the IP address shown on your PC screen (e.g., `192.168.1.50`) and tap **CONNECT**.
+3. All checklists from your PC's `checklists/` folder will immediately sync to your tablet over your home Wi-Fi!
 
-*(Optional: To run the sync server silently on Windows boot, place a shortcut to `tools/start-background-server.vbs` in your Windows Startup folder: `shell:startup`).*
+*(Optional: To run the PC sync server silently in the background on Windows startup, place a shortcut to `tools/start-background-server.vbs` in your Windows Startup folder: press `Win + R`, type `shell:startup`, and paste the shortcut).*
 
 ---
 
