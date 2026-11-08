@@ -4,7 +4,7 @@ An open-source Electronic Flight Bag designed for flight simulator enthusiasts (
 
 Virtual EFB runs as a **standalone, full-screen Android tablet application** paired with a lightweight **PC companion server** that automatically syncs your aircraft `.pdf` checklists over your local home Wi-Fi.
 
-![Cockpit EFB](icons/icon-512.png)
+![Virtual EFB Interface](screenshot.jpg)
 
 ---
 
@@ -99,6 +99,7 @@ The compiled, aligned, and signed `EFB.apk` will be output directly to the root 
 ```text
 ├── EFB.apk                 # Pre-built standalone Android app installer
 ├── Start-EFB.bat           # One-click launcher for the PC sync companion server
+├── screenshot.jpg          # Application interface preview
 ├── index.html              # EFB launcher UI (bundled inside the Android app)
 ├── css/                    # Cockpit theme styling
 ├── js/                     # EFB app state and local sync engine
