@@ -158,19 +158,26 @@
       <label class="check"><input type="checkbox" id="sWake" /> <span>KEEP SCREEN AWAKE</span></label>
       <label class="check"><input type="checkbox" id="sSeconds" checked /> <span>SHOW SECONDS ON UTC CLOCK</span></label>
 
-      <div id="firefoxSetup">
+      <label>SIMULATOR PC CONNECTION (for checklist & app sync)
+        <div class="sb-id-row">
+          <input type="text" id="sPcIp" maxlength="60" placeholder="e.g. 192.168.1.50" />
+          <button type="button" class="btn btn-amber" id="btnConnectPc">CONNECT</button>
+        </div>
+        <span class="help" id="pcIpStatus">Enter the IP shown on your PC screen (http://localhost) so this tablet syncs checklists.</span>
+      </label>
+
+      <div id="firefoxSetup" hidden>
       <h3>TABLET FIREFOX SETUP</h3>
       <div class="btn-row">
         <a class="btn btn-amber" href="https://addons.mozilla.org/firefox/addon/nod-os-unblocker-v1/" target="_blank" rel="noopener" style="text-decoration:none">1. INSTALL IFRAME UNBLOCKER</a>
         <a class="btn" href="https://addons.mozilla.org/firefox/addon/disable-csp-and-cors/" target="_blank" rel="noopener" style="text-decoration:none">2. UNBLOCK VATSIM RADAR</a>
       </div>
       <p class="help" style="line-height:1.45">
-        <b>Step 3 (Allow Login Cookies Inside EFB):</b><br/>
-        1. Open the EFB on <code style="user-select:all;color:var(--cyan)">https://192.168.4.37</code> (accept the one-time security prompt so Navigraph's Sign-In button lights up).<br/>
-        2. In Firefox on your tablet, open a new tab and go to:<br/>
+        <b>Allow Login Cookies Inside EFB:</b><br/>
+        In Firefox on your tablet, open a new tab and go to:<br/>
         <code style="user-select:all;color:var(--cyan)">chrome://geckoview/content/config.xhtml</code><br/>
         • Search <b>network.cookie.cookieBehavior</b> → set to <code style="user-select:all;color:var(--amber)">0</code><br/>
-        3. To sign into <b>VATSIM Radar</b> (or <b>Navigraph</b>) without Error 419: open the app in the EFB, tap <b>↗</b> (top-right bar) once to sign in in a normal tab, close that tab, and tap <b>↻</b> in the EFB!
+        • To sign into <b>VATSIM Radar</b> (or <b>Navigraph</b>): open the app in the EFB, tap <b>↗</b> (top-right bar) once to sign in in a normal tab, close that tab, and tap <b>↻</b> in the EFB!
       </p>
       </div>
 

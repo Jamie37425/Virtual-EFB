@@ -208,7 +208,7 @@ function Handle-Client($client, [bool]$isHttps) {
     # Checklist, state sync, ATIS, and APK download endpoints stay reachable over plain HTTP for the EFB Android app (no HTTPS redirect)
     $appApiPath = ($path -like 'checklists/*') -or ($path -eq 'EFB.apk') -or ($path -in @('api/save-checklist', 'api/delete-checklist', 'api/atis', 'api/state', 'api/sync-defaults', 'api/info'))
 
-    # Redirect non-localhost HTTP requests (e.g. tablet on http://192.168.4.37) to HTTPS (https://192.168.4.37)
+    # Redirect non-localhost HTTP requests (e.g. tablet on LAN IP) to HTTPS
     # so the tablet gets a full Secure Context (window.crypto.subtle + Secure cookies) without needing a port number.
     if (-not $isHttps -and -not $appApiPath -and $listener443 -and $hostHeader -and $hostHeader -notmatch '^(localhost|127\.0\.0\.1)(:\d+)?$') {
       $cleanHost = $hostHeader -replace ':\d+$', ''

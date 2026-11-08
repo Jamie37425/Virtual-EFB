@@ -345,8 +345,21 @@ async function fetchAtisGuru(code) {
   }
 
   // 2. Otherwise try local server proxy, direct fetch, or CORS proxy
+  let pcBase = '';
+  try {
+    pcBase = (window.parent && window.parent.localStorage ? window.parent.localStorage.getItem('efb.pcBase') : localStorage.getItem('efb.pcBase')) || '';
+    if (pcBase) {
+      pcBase = pcBase.trim().replace(/\/$/, '');
+      if (!/^https?:\/\//i.test(pcBase)) pcBase = 'http://' + pcBase;
+    }
+  } catch {}
+
+  const serverApi = pcBase
+    ? `${pcBase}/api/atis?icao=${encodeURIComponent(code)}&t=${Date.now()}`
+    : `../api/atis?icao=${encodeURIComponent(code)}&t=${Date.now()}`;
+
   const urls = [
-    `${window.parent && window.parent.EFBNative ? 'http://192.168.4.37/' : '../'}api/atis?icao=${encodeURIComponent(code)}&t=${Date.now()}`,
+    serverApi,
     targetUrl,
     `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
   ];
