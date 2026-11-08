@@ -5,7 +5,7 @@ $pdfPath = Join-Path $outDir 'A320-Normal-Checklist.pdf'
 
 # Build a valid single-page PDF with crisp vector text
 $lines = @(
-  'BT /F1 18 Tf 50 780 Td (AIRBUS A320 - NORMAL CHECKLIST) Tj ET',
+  'BT /F1 18 Tf 50 780 Td (A320 - NORMAL CHECKLIST) Tj ET',
   'BT /F2 10 Tf 50 762 Td (FOR FLIGHT SIMULATION USE ONLY) Tj ET',
   '0.12 0.24 0.39 RG 1.5 w 50 752 m 545 752 l S',
   'BT /F1 13 Tf 50 730 Td (COCKPIT PREPARATION) Tj ET',

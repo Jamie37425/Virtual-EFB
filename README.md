@@ -1,17 +1,17 @@
 # Virtual EFB (Electronic Flight Bag)
 
-An Airbus-inspired, open-source Electronic Flight Bag designed for flight simulator enthusiasts (Microsoft Flight Simulator, X-Plane, Prepar3D).
+An open-source Electronic Flight Bag designed for flight simulator enthusiasts (Microsoft Flight Simulator, X-Plane, Prepar3D).
 
 Virtual EFB runs as a **standalone, full-screen Android tablet application** paired with a lightweight **PC companion server** that automatically syncs your aircraft `.pdf` checklists over your local home Wi-Fi.
 
-![Airbus Cockpit EFB](icons/icon-512.png)
+![Cockpit EFB](icons/icon-512.png)
 
 ---
 
 ## Highlights & Features
 
 ### ✈️ Cockpit Design & Avionics Aesthetic
-* **Airbus Theme**: Sleek, high-contrast dark cockpit aesthetic utilizing **B612**—the official open-source font designed by Airbus for aircraft cockpit displays.
+* **Cockpit Theme**: Sleek, high-contrast dark cockpit aesthetic utilizing **B612**—the open-source font designed for aircraft cockpit displays.
 * **Status Bar**: Real-time **UTC (Zulu) clock**, live date, battery monitor, night-dimming slider, and screen wake-lock toggle.
 * **SimBrief Integration**: Enter your SimBrief Pilot ID to automatically fetch your active flight plan callsign, origin, and destination directly into the top bar.
 
@@ -69,9 +69,9 @@ Virtual EFB runs as a **standalone, full-screen Android tablet application** pai
 ## Adding & Customizing Apps
 
 Tap **+ ADD APP** on the top bar of your tablet:
-* **Web Address**: Enter any flight simulation URL (e.g., Navigraph Charts, VATSIM Radar, vEZY ICC, FSLabs, Windy, SimBrief, SkyVector).
+* **Web Address**: Enter any flight simulation URL (e.g., Navigraph Charts, VATSIM Radar, Windy, SimBrief, SkyVector).
 * **HTML File**: Select any single-file HTML web utility saved on your device.
-* **Custom Icons**: Choose from 10 Airbus-inspired highlight colors and custom letter/emoji icons or upload an image.
+* **Custom Icons**: Choose from 10 cockpit highlight colors and custom letter/emoji icons or upload an image.
 * **Reorder & Edit**: Long-press any tile (or tap **EDIT**) to move, reconfigure, or delete tiles.
 
 ---
@@ -100,7 +100,7 @@ The compiled, aligned, and signed `EFB.apk` will be output directly to the root 
 ├── EFB.apk                 # Pre-built standalone Android app installer
 ├── Start-EFB.bat           # One-click launcher for the PC sync companion server
 ├── index.html              # EFB launcher UI (bundled inside the Android app)
-├── css/                    # Airbus cockpit theme styling
+├── css/                    # Cockpit theme styling
 ├── js/                     # EFB app state and local sync engine
 ├── apps/                   # Bundled offline utilities (Checklists, Wind Calc)
 ├── checklists/             # Drop your aircraft PDF checklists here
@@ -113,4 +113,4 @@ The compiled, aligned, and signed `EFB.apk` will be output directly to the root 
 ## License
 
 This project is open-source under the [MIT License](LICENSE).
-Airbus font **B612** is licensed under the SIL Open Font License (OFL).
+Cockpit font **B612** is licensed under the SIL Open Font License (OFL).

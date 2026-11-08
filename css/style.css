@@ -1,7 +1,7 @@
 /* =========================================================
-   EFB – Airbus-style theme
+   EFB – Cockpit theme
    Dark blue background, cyan for data, amber for actions,
-   green for active/OK, red for warnings. Font: B612 (Airbus).
+   green for active/OK, red for warnings. Font: B612.
    ========================================================= */
 :root {
   --bg: #050b14;

@@ -1,7 +1,7 @@
 {
   "name": "EFB – Electronic Flight Bag",
   "short_name": "EFB",
-  "description": "Airbus-style Electronic Flight Bag launcher for websites and HTML apps.",
+  "description": "Cockpit Electronic Flight Bag launcher for websites and HTML apps.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "fullscreen",
