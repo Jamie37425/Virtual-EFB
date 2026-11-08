@@ -18,7 +18,7 @@ Virtual EFB runs as a **standalone, full-screen Android tablet application** pai
 ### 📱 Dedicated Android Tablet Application
 * **Standalone Android APK**: Runs completely full-screen with immersive mode enabled. Includes an AssistiveTouch / iPad-style floating home button that can be freely dragged anywhere on the screen.
 * **Native In-App Browsing**: Embedded web views allow external flight tools to load cleanly without browser chrome or toolbars.
-* **Zero PC Requirement in Cockpit**: All flight tools, cached checklists, calculators, and scratchpads run directly on the tablet.
+* **Zero PC Requirement in Cockpit**: All flight tools, cached checklists, and flight calculators run directly on the tablet.
 
 ### 📋 Interactive Checklists & Local Wi-Fi Sync
 * **Built-in PDF Viewer**: Render multi-page aircraft procedures and checklists with night-mode inverted reading and auto-fit scaling.
@@ -30,9 +30,6 @@ Virtual EFB runs as a **standalone, full-screen Android tablet application** pai
 * **Runway Wind Vectors**: Enter an ICAO airport code to load runways, calculate headwind, tailwind, and crosswind components, and highlight the optimal runway.
 * **Live VATSIM & Real-World D-ATIS**: Automatically pulls digital ATIS from active VATSIM controllers. When no controller is online, it falls back to real-world Digital ATIS (both Arrival and Departure ATIS) using a native Android bridge that bypasses CORS restrictions.
 * **Conversion Tools**: Instant conversions for Fuel (KG, LBS, US Gal, Litres), Weight, Pressure (hPa ↔ inHg), and Distance/Speed.
-
-### ✏️ Pilot Scratchpad
-* Touch and stylus drawing pad with aircraft clearance templates (**C-R-A-F-T**: Clearance, Route, Altitude, Frequency, Transponder), runway notes, and quick clear/undo controls.
 
 ---
 
@@ -105,7 +102,7 @@ The compiled, aligned, and signed `EFB.apk` will be output directly to the root 
 ├── index.html              # EFB launcher UI (bundled inside the Android app)
 ├── css/                    # Airbus cockpit theme styling
 ├── js/                     # EFB app state and local sync engine
-├── apps/                   # Bundled offline utilities (Checklists, Wind Calc, Scratchpad)
+├── apps/                   # Bundled offline utilities (Checklists, Wind Calc)
 ├── checklists/             # Drop your aircraft PDF checklists here
 ├── android/                # Native Android application source & build scripts
 └── tools/                  # Companion server and background sync utilities
