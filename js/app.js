@@ -671,8 +671,6 @@
     $('sWake').checked = settings.wake;
     $('sSeconds').checked = settings.seconds;
     $('sWake').disabled = !NATIVE && !('wakeLock' in navigator);
-    const ffSetup = $('firefoxSetup');
-    if (ffSetup) ffSetup.hidden = NATIVE;   // Firefox tweaks are not needed in the Android app
     const baseAbout = `EFB v${VERSION} · ${apps.length} apps · ` +
       (window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches ? 'installed' : 'running in browser');
     $('aboutLine').textContent = baseAbout;

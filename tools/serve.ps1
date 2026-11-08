@@ -1,4 +1,4 @@
-# Tiny local web server for running the EFB on this PC (http://localhost) and on any tablet (https://192.168.x.x).
+﻿# Tiny local web server for running the EFB on this PC (http://localhost) and on any tablet (https://192.168.x.x).
 # Listens on Port 80 (HTTP) and Port 443 (HTTPS) simultaneously so NO port number is ever needed in the URL,
 # and tablets get a full Secure Context (https://) required by Navigraph Charts (WebCrypto) and VATSIM Radar.
 param([int]$Port = 80, [int]$HttpsPort = 443)
@@ -31,65 +31,6 @@ function Send-HttpResponse($stream, [int]$statusCode, [string]$statusText, [stri
   }
   $stream.Flush()
 }
-
-$script:lastFirefoxPid = 0
-function Install-FirefoxUnblocker {
-  try {
-    $ffConn = Get-NetTCPConnection -LocalPort 2828 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
-    if (-not $ffConn -or $ffConn.OwningProcess -eq $script:lastFirefoxPid) { return }
-    $extPath = (Join-Path $root 'tools\efb-firefox-extension') -replace '\\', '\\'
-    $tcp = New-Object System.Net.Sockets.TcpClient
-    $iar = $tcp.BeginConnect('127.0.0.1', 2828, $null, $null)
-    if (-not $iar.AsyncWaitHandle.WaitOne(200, $false)) { $tcp.Close(); return }
-    $tcp.EndConnect($iar)
-    $s = $tcp.GetStream()
-    $s.ReadTimeout = 500
-    $buf = New-Object byte[] 4096
-    $null = $s.Read($buf, 0, $buf.Length)
-    foreach ($cmd in @(
-      '[0,1,"WebDriver:NewSession",{}]',
-      "[0,2,`"Addon:Install`",{`"path`":`"$extPath`",`"temporary`":true}]"
-    )) {
-      $p = [System.Text.Encoding]::UTF8.GetBytes("$($cmd.Length):$cmd")
-      $s.Write($p, 0, $p.Length)
-      $s.Flush()
-      Start-Sleep -Milliseconds 60
-      if ($s.DataAvailable) { $null = $s.Read($buf, 0, $buf.Length) }
-    }
-    $tcp.Close()
-    $script:lastFirefoxPid = $ffConn.OwningProcess
-  } catch {}
-}
-
-$lanIp = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
-  Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } |
-  Select-Object -ExpandProperty IPAddress -First 1)
-
-# Ensure Firefox profiles have cookie/storage unblocking & Marionette enabled (ASCII without BOM)
-$ffProfiles = "$env:APPDATA\Mozilla\Firefox\Profiles"
-if (Test-Path $ffProfiles) {
-  $userJs = @"
-user_pref("toolkit.startup.max_resumed_crashes", -1);
-user_pref("dom.securecontext.allowlist", "$lanIp,home");
-user_pref("network.cookie.cookieBehavior", 0);
-user_pref("network.cookie.sameSite.laxByDefault", false);
-user_pref("network.cookie.sameSite.noneRequiresSecure", false);
-user_pref("privacy.trackingprotection.enabled", false);
-user_pref("privacy.trackingprotection.socialtracking.enabled", false);
-user_pref("privacy.partition.network_state", false);
-user_pref("privacy.partition.serviceWorkers", false);
-user_pref("privacy.partition.always_partition_third_party_non_cookie_storage", false);
-user_pref("dom.storage_access.enabled", false);
-user_pref("dom.security.https_first", false);
-user_pref("dom.security.https_first_pbm", false);
-user_pref("marionette.enabled", true);
-user_pref("marionette.port", 2828);
-"@
-  Get-ChildItem $ffProfiles -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-    [System.IO.File]::WriteAllText((Join-Path $_.FullName 'user.js'), $userJs, [System.Text.Encoding]::ASCII)
-  }
-}
-Install-FirefoxUnblocker
 
 # Ensure self-signed HTTPS certificate exists for LAN IP & localhost
 $cert = Get-ChildItem Cert:\CurrentUser\My -ErrorAction SilentlyContinue |
@@ -220,7 +161,6 @@ function Handle-Client($client, [bool]$isHttps) {
 
     # API: Server network info (LAN IP for tablet)
     if ($method -eq 'GET' -and $path -eq 'api/info') {
-      Install-FirefoxUnblocker
       $ip = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
         Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } |
         Select-Object -ExpandProperty IPAddress -First 1)
@@ -456,10 +396,7 @@ function Sync-ChecklistFolder {
     if ($path -eq 'checklists/index.json') {
       Sync-ChecklistFolder
     }
-    if ($path -eq '') {
-      $path = 'index.html'
-      Install-FirefoxUnblocker
-    }
+    if ($path -eq '' -or $path -eq 'index.html') { $path = 'tools\companion.html' }
     $file = [System.IO.Path]::GetFullPath((Join-Path $root $path))
     if ($file.StartsWith($root) -and (Test-Path $file -PathType Leaf)) {
       $bytes = [System.IO.File]::ReadAllBytes($file)
