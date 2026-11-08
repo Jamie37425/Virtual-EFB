@@ -175,12 +175,19 @@
     </div>
 
     <div class="card">
-      <h2>3. ANDROID TABLET APP</h2>
+      <h2>3. INSTALL APP ON YOUR ANDROID TABLET</h2>
       <p class="desc">
-        Virtual EFB runs as a standalone, full-screen cockpit application on Android tablets. You can download the latest installer directly to your tablet below:
+        To install the EFB on your tablet, simply pull the app installer directly from this PC over your Wi-Fi:
+      </p>
+      <div class="ip-box" style="margin: 12px 0; background: #020617; border-color: rgba(74, 222, 128, 0.4);">
+        <div class="ip-label" style="color: #4ade80;">TYPE THIS INTO YOUR TABLET'S WEB BROWSER:</div>
+        <div class="ip-val" style="font-size: 20px; color: #4ade80;" id="apkUrl">http://.../EFB.apk</div>
+      </div>
+      <p class="desc" style="text-align:center; font-size:12px; color:#64748b;">
+        (Or tap the button below if you are viewing this page on your tablet browser)
       </p>
       <a href="/EFB.apk" class="btn-download" download="EFB.apk">
-        📥 DOWNLOAD EFB.APK (FOR ANDROID TABLET)
+        📥 DOWNLOAD EFB.APK
       </a>
     </div>
 
@@ -197,6 +204,8 @@
           const info = await r.json();
           if (info && info.ip) {
             document.getElementById('pcIp').textContent = info.ip;
+            const apkEl = document.getElementById('apkUrl');
+            if (apkEl) apkEl.textContent = 'http://' + info.ip + '/EFB.apk';
           }
         }
       } catch {}

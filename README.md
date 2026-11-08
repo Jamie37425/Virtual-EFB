@@ -46,11 +46,19 @@ Virtual EFB runs as a **standalone, full-screen Android tablet application** pai
 4. Double-click **`Start-EFB.bat`**:
    * A clean PC status dashboard will open in your browser displaying your PC's local Wi-Fi IP address (e.g., `192.168.1.50`).
 
-### Step 2: Install the App on your Android Tablet
-1. Download **`EFB.apk`** from the [Releases](../../releases) tab (or click the download button directly on your PC's status screen from your tablet at `http://<YOUR-PC-IP>/EFB.apk`).
-2. On your tablet, open the downloaded file using Android's **Package Installer**.
-3. If prompted by Android, enable **Allow from this source** and tap **Install** (or tap *More details → Install anyway* if prompted by Play Protect).
-4. Launch **EFB** from your home screen.
+### Step 2: Install the App on your Android Tablet (Over Local Wi-Fi)
+1. On your Android tablet, open any web browser (Chrome, Samsung Internet, Firefox).
+2. Type your PC's download address directly into the tablet's browser:
+   ```text
+   http://<YOUR-PC-IP>/EFB.apk
+   ```
+   *(For example, if your PC screen shows `192.168.1.50`, type `http://192.168.1.50/EFB.apk`)*.
+3. Your tablet will immediately pull the installer file directly from your PC!
+4. Open the downloaded file using Android's **Package Installer** and tap **Install**.
+   *(If prompted by Android, tap "Allow from this source" or "Install anyway").*
+5. Launch **EFB** from your tablet's home screen.
+
+*(Alternative: You can also download `EFB.apk` directly from the [Releases](../../releases) tab on GitHub).*
 
 ### Step 3: Connect Tablet to PC (One-Time Setup)
 1. In the **EFB** app on your tablet, tap ⚙ **Settings** on the top bar.
