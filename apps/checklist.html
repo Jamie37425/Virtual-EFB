@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<title>Checklists (PDF)</title>
+<link href="https://fonts.googleapis.com/css2?family=B612:wght@400;700&family=B612+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #050b14; --bg2: #0a1626; --panel: #0e1e33; --panel2: #132a46;
+    --line: #1f3d63; --text: #e6f1ff; --dim: #7f97b5;
+    --cyan: #19d3ff; --amber: #ffb300; --green: #2dff6e; --red: #ff3b3b;
+    --font: "B612", system-ui, sans-serif; --mono: "B612 Mono", monospace;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); overflow: hidden; user-select: none; }
+  [hidden] { display: none !important; }
+  button { font-family: inherit; cursor: pointer; }
+
+  .layout { display: flex; flex-direction: column; height: 100%; }
+
+  /* ======== SINGLE COMPACT TOP BAR ======== */
+  .top-bar {
+    display: flex; align-items: center; gap: 6px;
+    height: 40px; padding: 0 8px; background: var(--bg2); border-bottom: 1px solid var(--line);
+    flex: 0 0 auto;
+  }
+  .ac-tabs {
+    display: flex; gap: 5px; overflow-x: auto; flex: 1; scrollbar-width: none; min-width: 80px;
+  }
+  .ac-tabs::-webkit-scrollbar { display: none; }
+  .ac-tab {
+    height: 28px; padding: 0 11px; border-radius: 5px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--dim); font-size: 11px; letter-spacing: 1.5px;
+    font-weight: 700; text-transform: uppercase; white-space: nowrap; display: inline-flex; align-items: center;
+  }
+  .ac-tab.active {
+    color: var(--cyan); border-color: var(--cyan);
+    box-shadow: inset 0 -2px 0 var(--cyan); background: var(--panel2);
+  }
+  .ac-tab .cnt { font-family: var(--mono); font-size: 10px; color: var(--dim); margin-left: 5px; font-weight: 400; }
+  .ac-tab.active .cnt { color: var(--green); }
+  .bar-sep { width: 1px; height: 22px; background: var(--line); flex: 0 0 auto; }
+
+  .btn {
+    background: var(--panel); color: var(--cyan); border: 1px solid var(--cyan);
+    border-radius: 6px; padding: 0 11px; font-size: 11px; letter-spacing: 1.5px; height: 28px;
+    white-space: nowrap; display: inline-flex; align-items: center;
+  }
+  .btn:active { background: var(--panel2); }
+  .btn-amber { color: var(--amber); border-color: var(--amber); }
+  .btn-red { color: var(--red); border-color: var(--red); }
+  .btn-ghost { color: var(--dim); border-color: var(--line); }
+  .btn.on { background: var(--cyan); color: var(--bg); }
+
+  /* ======== BODY: SIDEBAR + PDF VIEWER ======== */
+  .body { display: flex; flex: 1; min-height: 0; }
+
+  aside {
+    width: 220px; flex: 0 0 auto; background: var(--bg2); border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  aside.collapsed { display: none; }
+  .doc-list { flex: 1; overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 5px; }
+  .doc-item {
+    display: flex; align-items: center; gap: 6px; padding: 8px 9px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 7px;
+    color: var(--text); text-align: left; cursor: pointer;
+  }
+  .doc-item.active {
+    border-color: var(--green); box-shadow: inset 3px 0 0 var(--green); background: var(--panel2);
+  }
+  .doc-item .info { flex: 1; min-width: 0; }
+  .doc-item .t { font-size: 12px; letter-spacing: 0.4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .doc-item .m { font-family: var(--mono); font-size: 9px; color: var(--cyan); margin-top: 2px; letter-spacing: 1px; }
+  .doc-item .del-btn {
+    background: transparent; border: 1px solid transparent; color: var(--dim);
+    border-radius: 5px; width: 24px; height: 24px; font-size: 12px; flex: 0 0 auto;
+  }
+  .doc-item .del-btn:hover, .doc-item .del-btn:active { color: var(--red); border-color: var(--red); }
+
+  /* ======== VIEWER AREA ======== */
+  .viewer { flex: 1; display: flex; flex-direction: column; min-width: 0; background: #070e19; }
+  .tb-btn {
+    min-width: 28px; height: 28px; padding: 0 8px; border-radius: 5px;
+    background: var(--panel); color: var(--cyan); border: 1px solid var(--line); font-size: 12px;
+    display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  }
+  .tb-btn:disabled { opacity: 0.35; pointer-events: none; }
+  .tb-btn.on { border-color: var(--amber); color: var(--amber); }
+  .page-ind { font-family: var(--mono); font-size: 12px; color: var(--green); padding: 0 4px; white-space: nowrap; }
+
+  .canvas-scroll {
+    flex: 1; overflow: auto; padding: 10px; display: flex; flex-direction: column;
+    align-items: center; gap: 12px; -webkit-overflow-scrolling: touch;
+  }
+  .page-wrap {
+    position: relative; background: #fff; box-shadow: 0 8px 28px rgba(0,0,0,.65);
+    border-radius: 4px; overflow: hidden; flex: 0 0 auto;
+  }
+  .page-wrap canvas { display: block; }
+  .canvas-scroll.night .page-wrap canvas {
+    filter: invert(0.92) hue-rotate(180deg) contrast(1.05);
+  }
+
+  .empty-state {
+    margin: auto; text-align: center; max-width: 420px; padding: 24px; color: var(--dim);
+  }
+  .empty-state h2 { color: var(--cyan); letter-spacing: 3px; font-size: 16px; margin: 0 0 8px; }
+  .empty-state p { font-size: 13px; line-height: 1.5; margin: 0 0 16px; }
+
+  /* ======== ADD PDF DIALOG ======== */
+  dialog {
+    background: var(--bg2); color: var(--text); border: 1px solid var(--cyan);
+    border-radius: 14px; width: min(520px, calc(100vw - 28px)); padding: 0;
+    box-shadow: 0 20px 60px rgba(0,0,0,.7);
+  }
+  dialog::backdrop { background: rgba(0, 4, 12, .75); }
+  dialog form { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  dialog h2 { margin: 0; font-size: 16px; letter-spacing: 3px; color: var(--cyan); }
+  dialog label { display: flex; flex-direction: column; gap: 6px; font-size: 11px; letter-spacing: 2px; color: var(--dim); }
+  dialog input[type="text"], dialog input[type="file"] {
+    font-family: var(--mono); font-size: 15px; color: var(--cyan);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; width: 100%;
+  }
+  dialog input[type="file"] { font-size: 13px; color: var(--text); }
+  .ac-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+  .ac-chip {
+    background: var(--panel); color: var(--cyan); border: 1px solid var(--line);
+    border-radius: 6px; padding: 5px 10px; font-size: 11px; font-family: var(--mono);
+  }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg label { flex: 1; flex-direction: row; gap: 0; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg span {
+    flex: 1; text-align: center; padding: 10px 6px; font-size: 11px; letter-spacing: 2px;
+    color: var(--dim); background: var(--bg); cursor: pointer;
+  }
+  .seg label + label span { border-left: 1px solid var(--line); }
+  .seg input:checked + span { background: var(--panel2); color: var(--green); box-shadow: inset 0 -3px 0 var(--green); }
+  .dlg-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+  .help { font-size: 11px; color: var(--dim); margin: -6px 0 0; line-height: 1.4; }
+
+  @media (max-width: 720px) {
+    aside { width: 200px; }
+    .tb-title { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <!-- ======== SINGLE COMPACT TOP BAR: AIRCRAFT TABS + PDF CONTROLS + ADD ======== -->
+  <header class="top-bar">
+    <button class="tb-btn" id="btnToggleSide" title="Show/hide checklist list">☰</button>
+    <div class="ac-tabs" id="acTabs"></div>
+    <span class="bar-sep"></span>
+    <button class="tb-btn" id="btnPrev" title="Previous page">◀</button>
+    <span class="page-ind" id="pageInd">--/--</span>
+    <button class="tb-btn" id="btnNext" title="Next page">▶</button>
+    <span class="bar-sep"></span>
+    <button class="tb-btn" id="btnZoomOut" title="Zoom out">−</button>
+    <button class="tb-btn" id="btnFit" title="Fit width">FIT</button>
+    <button class="tb-btn" id="btnZoomIn" title="Zoom in">+</button>
+    <button class="tb-btn" id="btnNight" title="Invert PDF colours for night cockpit">☾</button>
+    <button class="btn btn-amber" id="btnAddPdf">+ PDF</button>
+  </header>
+
+  <div class="body">
+    <!-- ======== LEFT SIDEBAR: CHECKLISTS FOR SELECTED AIRCRAFT ======== -->
+    <aside id="sidebar">
+      <div class="doc-list" id="docList"></div>
+    </aside>
+
+    <!-- ======== MAIN PDF VIEWER ======== -->
+    <main class="viewer">
+      <div class="canvas-scroll" id="scrollArea">
+        <div class="empty-state" id="emptyState" hidden>
+          <h2>NO PDF CHECKLISTS</h2>
+          <p>Tap <b>+ ADD PDF</b> in the top right to pick one or more checklist PDFs from your tablet and assign them to an aircraft (e.g. A320, B738, A350).</p>
+          <button class="btn btn-amber" id="btnEmptyAdd">+ ADD PDF CHECKLIST</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ======== ADD PDF DIALOG ======== -->
+<dialog id="addDialog">
+  <form id="addForm" method="dialog" autocomplete="off">
+    <h2>ADD CHECKLIST PDF</h2>
+
+    <label>AIRCRAFT TYPE (GROUP)
+      <input type="text" id="fAircraft" maxlength="16" required placeholder="e.g. A320, B738, A350, B777" />
+      <div class="ac-chips" id="acChips"></div>
+    </label>
+
+    <div class="seg">
+      <label><input type="radio" name="srcType" value="file" checked /><span>PDF FILE FROM DEVICE</span></label>
+      <label><input type="radio" name="srcType" value="url" /><span>PDF LINK / PATH</span></label>
+    </div>
+
+    <div id="rowFile">
+      <label>CHOOSE PDF FILE(S)
+        <input type="file" id="fFiles" accept=".pdf,application/pdf" multiple />
+      </label>
+      <p class="help">You can select multiple PDFs at once — they will be saved on this tablet for offline use.</p>
+    </div>
+
+    <div id="rowUrl" hidden>
+      <label>PDF URL OR FOLDER PATH
+        <input type="text" id="fUrl" placeholder="e.g. ../checklists/B738-Normal.pdf" />
+      </label>
+    </div>
+
+    <label>CHECKLIST TITLE (OPTIONAL IF UPLOADING MULTIPLE)
+      <input type="text" id="fTitle" maxlength="40" placeholder="e.g. Normal Procedures / QRH" />
+    </label>
+
+    <div class="dlg-actions">
+      <button type="button" class="btn btn-ghost" id="btnCancel">CANCEL</button>
+      <button type="submit" class="btn btn-amber">SAVE PDF</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="../vendor/pdfjs/pdf.min.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '../vendor/pdfjs/pdf.worker.min.js';
+
+  const LS_META = 'efb.pdfchecklists.meta.v1';
+  const LS_STATE = 'efb.pdfchecklists.state.v1';
+  const COMMON_AC = ['A320', 'A330', 'A350', 'A380', 'B738', 'B777', 'B787', 'CRJ', 'ATR'];
+
+  const $ = (id) => document.getElementById(id);
+
+  /* -------- IndexedDB for storing uploaded PDF binaries -------- */
+  const idb = (() => {
+    let dbp;
+    const open = () => dbp || (dbp = new Promise((res, rej) => {
+      const r = indexedDB.open('efb_checklists_pdf', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('pdfs');
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    }));
+    const tx = async (mode, fn) => {
+      const db = await open();
+      return new Promise((res, rej) => {
+        const t = db.transaction('pdfs', mode);
+        const req = fn(t.objectStore('pdfs'));
+        t.oncomplete = () => res(req ? req.result : undefined);
+        t.onerror = t.onabort = () => rej(t.error);
+      });
+    };
+    return {
+      get: (k) => tx('readonly', (s) => s.get(k)),
+      set: (k, v) => tx('readwrite', (s) => s.put(v, k)),
+      del: (k) => tx('readwrite', (s) => s.delete(k)),
+    };
+  })();
+
+  /* -------- State -------- */
+  let builtinDocs = []; // from ../checklists/index.json
+  let userDocs = JSON.parse(localStorage.getItem(LS_META) || '[]');
+  let uiState = Object.assign({ aircraft: 'ALL', activeId: null, night: false, scale: 'fit', hiddenBuiltin: [] },
+    JSON.parse(localStorage.getItem(LS_STATE) || '{}'));
+
+  let pdfDoc = null;
+  let currentScale = 1.25;
+  let rendering = false;
+
+  /* -------- Sync tablet/browser-imported PDFs to local checklists/ folder when running on PC -------- */
+  function bytesToBase64(bytes) {
+    let binary = '';
+    const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    const chunk = 0x8000;
+    for (let i = 0; i < u8.length; i += chunk) {
+      binary += String.fromCharCode.apply(null, u8.subarray(i, i + chunk));
+    }
+    return btoa(binary);
+  }
+
+  /* In the EFB Android app the PDFs live on the PC: fetch them from the PC server over the home Wi-Fi,
+     and fall back to the copies bundled inside the app when the PC isn't reachable. */
+  const IN_APP = !!(window.parent && window.parent.EFBNative);
+  const PC_BASE = localStorage.getItem('efb.pcBase') || 'http://192.168.4.37';
+  const apiBase = () => (IN_APP ? PC_BASE + '/' : '../');
+  function fetchTimeout(url, opts, ms) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), ms);
+    return fetch(url, Object.assign({}, opts, { signal: ctl.signal })).finally(() => clearTimeout(t));
+  }
+
+  async function trySaveToDiskFolder(doc, bytes) {
+    try {
+      const r = await fetch(apiBase() + 'api/save-checklist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: doc.id,
+          aircraft: doc.aircraft,
+          title: doc.title,
+          base64: bytesToBase64(bytes),
+        }),
+      });
+      if (!r.ok) return false;
+      const res = await r.json();
+      if (res && res.ok && res.file) {
+        // Saved to C:\Users\princ\Desktop\App\checklists! Promote to folder PDF
+        if (!builtinDocs.some((b) => b.id === doc.id)) {
+          builtinDocs.push({ id: doc.id, aircraft: doc.aircraft, title: doc.title, file: res.file, source: 'builtin' });
+        }
+        userDocs = userDocs.filter((u) => u.id !== doc.id);
+        saveMeta();
+        await idb.del(doc.id).catch(() => {});
+        return true;
+      }
+    } catch {}
+    return false;
+  }
+  function saveMeta() { localStorage.setItem(LS_META, JSON.stringify(userDocs)); }
+  function saveState() { localStorage.setItem(LS_STATE, JSON.stringify(uiState)); }
+
+  function allDocs() {
+    const hidden = new Set(uiState.hiddenBuiltin || []);
+    return [...builtinDocs.filter((d) => !hidden.has(d.id)), ...userDocs];
+  }
+
+  function aircraftList() {
+    const map = new Map();
+    for (const d of allDocs()) {
+      const ac = (d.aircraft || 'OTHER').toUpperCase();
+      map.set(ac, (map.get(ac) || 0) + 1);
+    }
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }
+
+  function docsForCurrentAircraft() {
+    const docs = allDocs();
+    if (uiState.aircraft === 'ALL') return docs;
+    return docs.filter((d) => (d.aircraft || 'OTHER').toUpperCase() === uiState.aircraft);
+  }
+
+  /* -------- Render Aircraft Tabs & Sidebar -------- */
+  function renderTabs() {
+    const tabs = $('acTabs');
+    tabs.textContent = '';
+    const all = allDocs();
+    const groups = aircraftList();
+
+    if (uiState.aircraft !== 'ALL' && !groups.some(([ac]) => ac === uiState.aircraft)) {
+      uiState.aircraft = 'ALL';
+    }
+
+    const makeTab = (code, label, count) => {
+      const b = document.createElement('button');
+      b.className = 'ac-tab' + (uiState.aircraft === code ? ' active' : '');
+      b.innerHTML = `<span>${label}</span><span class="cnt">${count}</span>`;
+      b.onclick = () => {
+        uiState.aircraft = code;
+        const list = docsForCurrentAircraft();
+        if (list.length && !list.some((d) => d.id === uiState.activeId)) {
+          openChecklist(list[0].id);
+        } else {
+          saveState();
+          renderUI();
+        }
+      };
+      tabs.appendChild(b);
+    };
+
+    makeTab('ALL', 'ALL', all.length);
+    for (const [ac, count] of groups) makeTab(ac, ac, count);
+  }
+
+  function renderSidebar() {
+    const list = docsForCurrentAircraft();
+    const wrap = $('docList');
+    wrap.textContent = '';
+
+    list.forEach((doc) => {
+      const row = document.createElement('div');
+      row.className = 'doc-item' + (doc.id === uiState.activeId ? ' active' : '');
+      row.innerHTML = `
+        <div class="info">
+          <div class="t"></div>
+          <div class="m"></div>
+        </div>
+        <button class="del-btn" title="Delete checklist">✕</button>
+      `;
+      row.querySelector('.t').textContent = doc.title;
+      row.querySelector('.m').textContent = `${doc.aircraft} · ${doc.source === 'file' ? 'TABLET PDF' : 'FOLDER PDF'}`;
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('.del-btn')) {
+          deleteChecklist(doc);
+          return;
+        }
+        openChecklist(doc.id);
+      });
+      wrap.appendChild(row);
+    });
+
+    $('emptyState').hidden = allDocs().length > 0;
+  }
+
+  function renderUI() {
+    renderTabs();
+    renderSidebar();
+    $('scrollArea').classList.toggle('night', !!uiState.night);
+    $('btnNight').classList.toggle('on', !!uiState.night);
+    $('btnFit').classList.toggle('on', uiState.scale === 'fit');
+  }
+
+  /* -------- Open & Render PDF -------- */
+  async function openChecklist(id) {
+    const doc = allDocs().find((d) => d.id === id);
+    if (!doc) {
+      pdfDoc = null;
+      $('pageInd').textContent = '--/--';
+      clearPages();
+      renderUI();
+      return;
+    }
+
+    uiState.activeId = doc.id;
+    saveState();
+    renderUI();
+
+    try {
+      let loadingTask;
+      if (doc.source === 'file') {
+        const bytes = await idb.get(doc.id);
+        if (!bytes) throw new Error('PDF data missing on tablet');
+        loadingTask = pdfjsLib.getDocument({ data: bytes.slice ? bytes.slice(0) : new Uint8Array(bytes) });
+      } else if (IN_APP) {
+        let bytes = await idb.get('cache_' + doc.id).catch(() => null);
+        if (!bytes) {
+          const r = await fetch(doc.file);
+          if (r.ok) {
+            bytes = new Uint8Array(await r.arrayBuffer());
+            await idb.set('cache_' + doc.id, bytes).catch(() => {});
+          }
+        }
+        if (bytes) {
+          loadingTask = pdfjsLib.getDocument({ data: bytes.slice ? bytes.slice(0) : new Uint8Array(bytes) });
+        } else {
+          loadingTask = pdfjsLib.getDocument(doc.file);
+        }
+      } else {
+        loadingTask = pdfjsLib.getDocument(doc.file);
+      }
+      pdfDoc = await loadingTask.promise;
+      await renderAllPages();
+    } catch (err) {
+      console.error('PDF load error:', err);
+      clearPages();
+      const msg = document.createElement('div');
+      msg.className = 'empty-state';
+      msg.innerHTML = `<h2>COULD NOT LOAD PDF</h2><p>${err.message || err}</p>`;
+      $('scrollArea').appendChild(msg);
+    }
+  }
+
+  function clearPages() {
+    const area = $('scrollArea');
+    [...area.querySelectorAll('.page-wrap')].forEach((el) => el.remove());
+  }
+
+  async function renderAllPages() {
+    if (!pdfDoc || rendering) return;
+    rendering = true;
+    clearPages();
+    const area = $('scrollArea');
+    const total = pdfDoc.numPages;
+    $('pageInd').textContent = `1 / ${total}`;
+
+    const firstPage = await pdfDoc.getPage(1);
+    const unscaled = firstPage.getViewport({ scale: 1 });
+    const availW = Math.max(280, area.clientWidth - 36);
+    if (uiState.scale === 'fit') {
+      currentScale = Math.min(2.4, availW / unscaled.width);
+    } else if (typeof uiState.scale === 'number') {
+      currentScale = uiState.scale;
+    }
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    for (let p = 1; p <= total; p++) {
+      const page = p === 1 ? firstPage : await pdfDoc.getPage(p);
+      const vp = page.getViewport({ scale: currentScale });
+
+      const wrap = document.createElement('div');
+      wrap.className = 'page-wrap';
+      wrap.dataset.page = p;
+      wrap.style.width = `${Math.floor(vp.width)}px`;
+      wrap.style.height = `${Math.floor(vp.height)}px`;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.floor(vp.width * dpr);
+      canvas.height = Math.floor(vp.height * dpr);
+      canvas.style.width = `${Math.floor(vp.width)}px`;
+      canvas.style.height = `${Math.floor(vp.height)}px`;
+      wrap.appendChild(canvas);
+      area.appendChild(wrap);
+
+      const ctx = canvas.getContext('2d');
+      await page.render({
+        canvasContext: ctx,
+        viewport: page.getViewport({ scale: currentScale * dpr }),
+      }).promise;
+    }
+    rendering = false;
+    updateVisiblePageIndicator();
+  }
+
+  function updateVisiblePageIndicator() {
+    if (!pdfDoc) return;
+    const area = $('scrollArea');
+    const wraps = [...area.querySelectorAll('.page-wrap')];
+    if (!wraps.length) return;
+    const mid = area.scrollTop + area.clientHeight / 3;
+    let cur = 1;
+    for (const w of wraps) {
+      if (w.offsetTop <= mid) cur = +w.dataset.page;
+    }
+    $('pageInd').textContent = `${cur} / ${pdfDoc.numPages}`;
+    $('btnPrev').disabled = cur <= 1;
+    $('btnNext').disabled = cur >= pdfDoc.numPages;
+  }
+
+  $('scrollArea').addEventListener('scroll', updateVisiblePageIndicator);
+
+  function scrollToPage(delta) {
+    if (!pdfDoc) return;
+    const area = $('scrollArea');
+    const wraps = [...area.querySelectorAll('.page-wrap')];
+    const [cur] = $('pageInd').textContent.split('/').map((s) => parseInt(s, 10));
+    const target = Math.min(pdfDoc.numPages, Math.max(1, (cur || 1) + delta));
+    const el = wraps.find((w) => +w.dataset.page === target);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  $('btnPrev').onclick = () => scrollToPage(-1);
+  $('btnNext').onclick = () => scrollToPage(1);
+  $('btnZoomIn').onclick = () => { uiState.scale = Math.min(3.0, +(currentScale * 1.2).toFixed(2)); saveState(); renderUI(); renderAllPages(); };
+  $('btnZoomOut').onclick = () => { uiState.scale = Math.max(0.5, +(currentScale / 1.2).toFixed(2)); saveState(); renderUI(); renderAllPages(); };
+  $('btnFit').onclick = () => { uiState.scale = 'fit'; saveState(); renderUI(); renderAllPages(); };
+  $('btnNight').onclick = () => { uiState.night = !uiState.night; saveState(); renderUI(); };
+  $('btnToggleSide').onclick = () => { $('sidebar').classList.toggle('collapsed'); if (uiState.scale === 'fit') setTimeout(renderAllPages, 50); };
+
+  /* -------- Add / Delete PDF Checklists -------- */
+  const dlg = $('addDialog');
+  const getSrcType = () => dlg.querySelector('input[name="srcType"]:checked').value;
+
+  function openAddDialog() {
+    $('fAircraft').value = uiState.aircraft !== 'ALL' ? uiState.aircraft : 'A320';
+    $('fTitle').value = '';
+    $('fUrl').value = '';
+    $('fFiles').value = '';
+
+    // Populate quick aircraft chips (existing + common)
+    const chips = $('acChips');
+    chips.textContent = '';
+    const names = new Set([...aircraftList().map(([ac]) => ac), ...COMMON_AC]);
+    names.forEach((ac) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ac-chip';
+      b.textContent = ac;
+      b.onclick = () => { $('fAircraft').value = ac; };
+      chips.appendChild(b);
+    });
+
+    dlg.showModal();
+  }
+
+  $('btnAddPdf').onclick = openAddDialog;
+  $('btnEmptyAdd').onclick = openAddDialog;
+  $('btnCancel').onclick = () => dlg.close();
+
+  dlg.querySelectorAll('input[name="srcType"]').forEach((r) => {
+    r.onchange = () => {
+      const isFile = getSrcType() === 'file';
+      $('rowFile').hidden = !isFile;
+      $('rowUrl').hidden = isFile;
+    };
+  });
+
+  $('fFiles').onchange = () => {
+    const files = $('fFiles').files;
+    if (files.length === 1 && !$('fTitle').value) {
+      $('fTitle').value = files[0].name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ');
+    }
+  };
+
+  $('addForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const ac = ($('fAircraft').value || 'OTHER').trim().toUpperCase();
+    const src = getSrcType();
+    const customTitle = $('fTitle').value.trim();
+
+    if (src === 'file') {
+      const files = [...$('fFiles').files];
+      if (!files.length) { alert('Please select at least one PDF file.'); return; }
+      let lastId = null;
+      for (const f of files) {
+        const id = 'pdf_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+        const buf = await f.arrayBuffer();
+        const u8 = new Uint8Array(buf);
+        const title = (files.length === 1 && customTitle)
+          ? customTitle
+          : f.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ');
+        const newDoc = { id, aircraft: ac, title, source: 'file' };
+        const savedToFolder = await trySaveToDiskFolder(newDoc, u8);
+        if (!savedToFolder) {
+          await idb.set(id, u8);
+          userDocs.push(newDoc);
+        }
+        lastId = id;
+      }
+      saveMeta();
+      uiState.aircraft = ac;
+      dlg.close();
+      if (lastId) openChecklist(lastId);
+    } else {
+      const url = $('fUrl').value.trim();
+      if (!url) { alert('Please enter a PDF URL or path.'); return; }
+      const id = 'url_' + Date.now().toString(36);
+      const title = customTitle || url.split('/').pop().replace(/\.pdf$/i, '') || 'Checklist';
+      userDocs.push({ id, aircraft: ac, title, file: url, source: 'url' });
+      saveMeta();
+      uiState.aircraft = ac;
+      dlg.close();
+      openChecklist(id);
+    }
+  };
+
+  async function deleteChecklist(doc) {
+    if (!confirm(`Remove "${doc.title}" (${doc.aircraft})?`)) return;
+    if (doc.source === 'file') {
+      await idb.del(doc.id).catch(() => {});
+      userDocs = userDocs.filter((d) => d.id !== doc.id);
+      saveMeta();
+    } else if (doc.source === 'url') {
+      userDocs = userDocs.filter((d) => d.id !== doc.id);
+      saveMeta();
+    } else {
+      try {
+        await fetch(apiBase() + 'api/delete-checklist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: doc.id }),
+        });
+      } catch {}
+      builtinDocs = builtinDocs.filter((d) => d.id !== doc.id);
+      uiState.hiddenBuiltin = [...(uiState.hiddenBuiltin || []), doc.id];
+      saveState();
+    }
+    const remaining = docsForCurrentAircraft();
+    if (remaining.length) openChecklist(remaining[0].id);
+    else {
+      uiState.aircraft = 'ALL';
+      const all = allDocs();
+      openChecklist(all.length ? all[0].id : null);
+    }
+  }
+
+  /* -------- Initialize & Auto-Sync with PC checklists/ folder -------- */
+  const LS_PC_INDEX = 'efb.chk.pcIndex.v1';
+  async function syncFolderChecklists() {
+    try {
+      let res = null, fromPc = false;
+      if (IN_APP) {
+        try {
+          res = await fetchTimeout(PC_BASE + '/checklists/index.json?t=' + Date.now(), { cache: 'no-store' }, 2500);
+          fromPc = !!(res && res.ok);
+        } catch { res = null; }
+      }
+      if (res && res.ok) {
+        const raw = await res.json();
+        const list = Array.isArray(raw) ? raw : (raw && raw.file ? [raw] : []);
+        builtinDocs = list.map((d) => Object.assign({ source: 'builtin' }, d, fromPc
+          ? { file: PC_BASE + '/checklists/' + String(d.file).replace(/^\.\.\/checklists\//, '').split('/').map(encodeURIComponent).join('/') }
+          : {}));
+        if (fromPc) {
+          localStorage.setItem(LS_PC_INDEX, JSON.stringify(builtinDocs));
+          // Pre-cache PDFs onto the tablet in the background so they work even when the PC is off
+          for (const d of builtinDocs) {
+            idb.get('cache_' + d.id).then(async (cached) => {
+              if (!cached) {
+                const pr = await fetch(d.file).catch(() => null);
+                if (pr && pr.ok) await idb.set('cache_' + d.id, new Uint8Array(await pr.arrayBuffer())).catch(() => {});
+              }
+            }).catch(() => {});
+          }
+        }
+      } else {
+        const cachedIndex = IN_APP ? loadJSON(LS_PC_INDEX, null) : null;
+        if (Array.isArray(cachedIndex) && cachedIndex.length) {
+          builtinDocs = cachedIndex;
+        } else {
+          const fallback = await fetch('../checklists/index.json?t=' + Date.now(), { cache: 'no-store' });
+          if (fallback.ok) {
+            const raw = await fallback.json();
+            const list = Array.isArray(raw) ? raw : (raw && raw.file ? [raw] : []);
+            builtinDocs = list.map((d) => Object.assign({ source: 'builtin' }, d));
+          }
+        }
+      }
+      // Un-hide any checklist that currently exists in the PC's checklists/ folder
+      const validIds = new Set(builtinDocs.map((d) => d.id));
+      if (Array.isArray(uiState.hiddenBuiltin)) {
+        uiState.hiddenBuiltin = uiState.hiddenBuiltin.filter((id) => !validIds.has(id));
+      }
+    } catch (e) {
+      console.warn('No checklists/index.json loaded:', e);
+    }
+  }
+
+  async function init() {
+    await syncFolderChecklists();
+
+    // Automatically migrate any browser-imported PDFs to the PC's checklists/ folder
+    for (const d of [...userDocs]) {
+      if (d.source === 'file') {
+        const bytes = await idb.get(d.id).catch(() => null);
+        if (bytes) await trySaveToDiskFolder(d, bytes);
+      }
+    }
+
+    renderUI();
+    const docs = allDocs();
+    const startId = docs.some((d) => d.id === uiState.activeId)
+      ? uiState.activeId
+      : (docs[0] ? docs[0].id : null);
+    if (startId) openChecklist(startId);
+  }
+
+  // Re-sync with PC checklists/ folder whenever switching back to Checklists (and every 5s while open)
+  async function checkChecklistUpdates() {
+    const prevJson = JSON.stringify(builtinDocs);
+    await syncFolderChecklists();
+    if (JSON.stringify(builtinDocs) !== prevJson) {
+      renderUI();
+      if (!pdfDoc && allDocs().length > 0) {
+        openChecklist(allDocs()[0].id);
+      }
+    }
+  }
+  window.addEventListener('focus', checkChecklistUpdates);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') checkChecklistUpdates();
+  });
+  setInterval(() => {
+    if (document.visibilityState === 'visible') checkChecklistUpdates();
+  }, 5000);
+
+  init();
+})();
+</script>
+</body>
+</html>

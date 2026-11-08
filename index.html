@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#050b14" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>EFB</title>
+  <script>
+    // If opened directly from disk (file://), redirect to the local server so cookies, logins & PDFs work
+    if (location.protocol === 'file:') {
+      location.replace('http://localhost/');
+    }
+  </script>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <!-- B612: open-source font designed by Airbus for cockpit displays -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=B612:wght@400;700&family=B612+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- ================= STATUS BAR ================= -->
+  <header id="statusbar">
+    <div class="sb-left">
+      <span class="logo" id="logoBtn" title="Home Menu" style="cursor:pointer">EFB</span>
+      <span id="sbCallsign" class="callsign" title="Tap to refresh callsign from SimBrief" style="cursor:pointer"></span>
+      <!-- Active app quick controls (only shown when an app is open) -->
+      <div id="sbAppControls" class="sb-app-ctrls" hidden>
+        <span class="sb-sep"></span>
+        <span class="ab-icon" id="abIcon"></span>
+        <span class="ab-title" id="abTitle"></span>
+        <button class="sb-btn sb-btn-sm" id="abReload" title="Reload app">⟳</button>
+        <button class="sb-btn sb-btn-sm" id="abExternal" title="Open outside the EFB">↗</button>
+        <button class="sb-btn sb-btn-sm ab-close" id="abClose" title="Close app">✕</button>
+      </div>
+    </div>
+    <div class="sb-center">
+      <span id="utcClock" class="utc">--:--:--</span>
+      <span class="utc-sub"><span id="utcDate">----</span></span>
+    </div>
+    <div class="sb-right">
+      <div id="sbHomeActions" class="sb-home-actions">
+        <button class="sb-pill" id="btnEdit">EDIT</button>
+        <button class="sb-pill sb-pill-amber" id="btnAdd">+ ADD APP</button>
+      </div>
+      <div class="sb-item" id="battStatus" hidden title="Battery"><span class="batt"><span class="batt-fill"></span></span><span class="batt-label">--%</span></div>
+      <button class="sb-btn" id="btnFullscreen" title="Full screen" aria-label="Full screen">⛶</button>
+      <button class="sb-btn" id="btnSettings" title="Settings" aria-label="Settings">⚙</button>
+    </div>
+  </header>
+
+  <!-- ================= HOME / LAUNCHER ================= -->
+  <main id="home">
+    <div class="bg-watermark" aria-hidden="true">
+      <div class="bg-wm-title">VIRTUAL EFB</div>
+      <div class="bg-wm-line"></div>
+      <div class="bg-wm-sub">ELECTRONIC FLIGHT BAG</div>
+    </div>
+    <div id="grid" class="grid"></div>
+    <p id="emptyMsg" class="empty" hidden>No apps yet. Tap <b>+ ADD APP</b> to add a website or HTML file.</p>
+  </main>
+
+  <!-- ================= APP VIEW (embedded apps) ================= -->
+  <section id="appview" hidden>
+    <div id="frames"></div>
+    <div id="embedHint" class="embed-hint" hidden>
+      <span>Blank page? This site may block being shown inside the EFB.</span>
+      <button class="btn btn-small" id="hintOpenExt">OPEN OUTSIDE ↗</button>
+      <button class="btn btn-small" id="hintAlwaysExt">ALWAYS OUTSIDE</button>
+      <button class="btn btn-small btn-ghost" id="hintDismiss" title="Don't show this again for this app">IT WORKS ✓</button>
+    </div>
+  </section>
+
+  <!-- ================= FLOATING HOME BUTTON (iPad / AssistiveTouch style) ================= -->
+  <button id="homeOrb" class="home-orb" title="Tap: Home Menu · Drag to move" aria-label="Home Menu" hidden>
+    <span class="orb-ring"><span class="orb-core"></span></span>
+  </button>
+
+  <!-- ================= ADD / EDIT APP DIALOG ================= -->
+  <dialog id="appDialog">
+    <form id="appForm" method="dialog" autocomplete="off">
+      <h2 id="appDialogTitle">ADD APP</h2>
+
+      <label>NAME
+        <input type="text" id="fName" maxlength="24" required placeholder="e.g. SimBrief" />
+      </label>
+
+      <div class="seg" role="radiogroup" aria-label="Source">
+        <label><input type="radio" name="fType" value="url" checked /><span>WEB ADDRESS</span></label>
+        <label><input type="radio" name="fType" value="file" /><span>HTML FILE</span></label>
+      </div>
+
+      <label id="rowUrl">WEB ADDRESS (URL)
+        <input type="text" id="fUrl" inputmode="url" placeholder="https://example.com  or  apps/checklist.html" />
+      </label>
+
+      <div id="rowFile" hidden>
+        <label>HTML FILE FROM THIS DEVICE
+          <input type="file" id="fFile" accept=".html,.htm,text/html" />
+        </label>
+        <p class="help" id="fFileInfo">Single-file HTML pages work best (CSS/JS inside the file).</p>
+      </div>
+
+      <div class="row2">
+        <label>ICON (emoji or letters)
+          <input type="text" id="fIcon" maxlength="4" placeholder="✈" />
+        </label>
+        <label>…OR ICON IMAGE
+          <input type="file" id="fIconImg" accept="image/*" />
+        </label>
+      </div>
+      <div class="icon-preview-row">
+        <div class="tile-icon preview" id="iconPreview">✈</div>
+        <button type="button" class="btn btn-small btn-ghost" id="btnClearIconImg" hidden>REMOVE IMAGE</button>
+      </div>
+
+      <fieldset class="colors">
+        <legend>COLOUR</legend>
+        <div id="colorChoices" class="color-choices"></div>
+      </fieldset>
+
+      <div class="seg" role="radiogroup" aria-label="Open mode">
+        <label><input type="radio" name="fMode" value="embed" checked /><span>OPEN INSIDE EFB</span></label>
+        <label><input type="radio" name="fMode" value="external" /><span>OPEN OUTSIDE</span></label>
+      </div>
+      <p class="help">Use "Open outside" for sites that refuse to load inside the EFB (blank screen).</p>
+
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-red" id="btnDeleteApp" hidden>DELETE</button>
+        <span class="ab-spacer"></span>
+        <button type="button" class="btn btn-ghost" id="btnCancelApp">CANCEL</button>
+        <button type="submit" class="btn btn-amber" id="btnSaveApp">SAVE</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ================= SETTINGS DIALOG ================= -->
+  <dialog id="settingsDialog">
+    <form method="dialog" id="settingsForm">
+      <h2>SETTINGS</h2>
+
+      <label>SIMBRIEF PILOT ID (pulls your active callsign to the top bar)
+        <div class="sb-id-row">
+          <input type="text" id="sSimbriefId" maxlength="24" placeholder="e.g. 123456" />
+          <button type="button" class="btn" id="btnFetchSimbrief">FETCH</button>
+        </div>
+        <span class="help" id="simbriefStatus"></span>
+      </label>
+
+      <label>DISPLAY BRIGHTNESS (night dimming)
+        <input type="range" id="sDim" min="0" max="70" step="5" value="0" />
+      </label>
+
+      <label class="check"><input type="checkbox" id="sWake" /> <span>KEEP SCREEN AWAKE</span></label>
+      <label class="check"><input type="checkbox" id="sSeconds" checked /> <span>SHOW SECONDS ON UTC CLOCK</span></label>
+
+      <div id="firefoxSetup">
+      <h3>TABLET FIREFOX SETUP</h3>
+      <div class="btn-row">
+        <a class="btn btn-amber" href="https://addons.mozilla.org/firefox/addon/nod-os-unblocker-v1/" target="_blank" rel="noopener" style="text-decoration:none">1. INSTALL IFRAME UNBLOCKER</a>
+        <a class="btn" href="https://addons.mozilla.org/firefox/addon/disable-csp-and-cors/" target="_blank" rel="noopener" style="text-decoration:none">2. UNBLOCK VATSIM RADAR</a>
+      </div>
+      <p class="help" style="line-height:1.45">
+        <b>Step 3 (Allow Login Cookies Inside EFB):</b><br/>
+        1. Open the EFB on <code style="user-select:all;color:var(--cyan)">https://192.168.4.37</code> (accept the one-time security prompt so Navigraph's Sign-In button lights up).<br/>
+        2. In Firefox on your tablet, open a new tab and go to:<br/>
+        <code style="user-select:all;color:var(--cyan)">chrome://geckoview/content/config.xhtml</code><br/>
+        • Search <b>network.cookie.cookieBehavior</b> → set to <code style="user-select:all;color:var(--amber)">0</code><br/>
+        3. To sign into <b>VATSIM Radar</b> (or <b>Navigraph</b>) without Error 419: open the app in the EFB, tap <b>↗</b> (top-right bar) once to sign in in a normal tab, close that tab, and tap <b>↻</b> in the EFB!
+      </p>
+      </div>
+
+      <h3>BACKUP</h3>
+      <div class="btn-row">
+        <button type="button" class="btn" id="btnExport">EXPORT APPS</button>
+        <button type="button" class="btn" id="btnImport">IMPORT APPS</button>
+        <input type="file" id="importFile" accept=".json,application/json" hidden />
+        <button type="button" class="btn btn-red" id="btnReset">RESET TO DEFAULTS</button>
+      </div>
+
+      <p class="help" id="aboutLine"></p>
+
+      <div class="dialog-actions">
+        <span class="ab-spacer"></span>
+        <button type="submit" class="btn btn-amber">CLOSE</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+  <div id="dimmer" aria-hidden="true"></div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

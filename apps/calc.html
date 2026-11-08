@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<title>Wind & Conversions</title>
+<link href="https://fonts.googleapis.com/css2?family=B612:wght@400;700&family=B612+Mono&display=swap" rel="stylesheet" />
+<style>
+  :root { --bg:#050b14; --panel:#0e1e33; --panel2:#132a46; --line:#1f3d63; --text:#e6f1ff; --dim:#7f97b5;
+          --cyan:#19d3ff; --amber:#ffb300; --green:#2dff6e; --magenta:#ff4dff; --font:"B612",system-ui,sans-serif; --mono:"B612 Mono",monospace; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; min-height:100%; background:var(--bg); color:var(--text); font-family:var(--font); }
+  .page { display:grid; grid-template-columns:1fr 1fr; gap:18px; padding:18px; }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  h2 { margin:0 0 14px; font-size:15px; letter-spacing:3px; color:var(--dim); font-weight:400; }
+  h2::before { content:"▮ "; color:var(--cyan); }
+  .fields { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .metar-bar {
+    display:flex; gap:10px; align-items:flex-end; margin-bottom:12px; flex-wrap:wrap;
+  }
+  .metar-bar .icao-wrap { display:flex; gap:8px; align-items:flex-end; }
+  .metar-bar input#icao { width:130px; height:48px; text-transform:uppercase; letter-spacing:2px; padding:0 10px; }
+  .btn-metar {
+    width:130px; height:48px; padding:0; border-radius:8px; border:1px solid var(--amber);
+    background:var(--panel2); color:var(--amber); font-family:var(--font);
+    font-size:12px; letter-spacing:2px; cursor:pointer; white-space:nowrap;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+  .btn-metar:active { background:rgba(255,179,0,.18); }
+  .btn-metar:disabled { opacity:.5; cursor:default; }
+  .metar-box {
+    flex:1; min-width:240px; min-height:48px; background:var(--bg); border:1px solid var(--line);
+    border-radius:8px; padding:8px 12px; display:flex; align-items:center; gap:10px;
+    font-family:var(--mono); font-size:13px; color:var(--green); word-break:break-word;
+  }
+  .metar-box.empty { color:var(--dim); font-size:12px; }
+  .metar-box.err { color:#ff3b3b; border-color:#ff3b3b; }
+  .wx-cat {
+    padding:3px 7px; border-radius:4px; font-size:10px; font-weight:700; letter-spacing:1px;
+    background:var(--green); color:var(--bg); flex:0 0 auto;
+  }
+  .wx-cat.MVFR { background:var(--cyan); }
+  .wx-cat.IFR { background:var(--amber); }
+  .wx-cat.LIFR { background:var(--magenta); color:#fff; }
+  .atis-box {
+    background:var(--bg); border:1px solid var(--line); border-radius:8px;
+    padding:10px 12px; margin-bottom:12px; font-family:var(--mono); font-size:12px;
+    color:var(--cyan); line-height:1.45;
+  }
+  .atis-head {
+    display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;
+  }
+  .atis-src {
+    display:inline-block; padding:3px 7px; border-radius:4px; font-size:10px; font-weight:700;
+    letter-spacing:1px; background:var(--green); color:var(--bg);
+  }
+  .atis-src.real { background:var(--amber); color:var(--bg); }
+  .atis-tabs { display:flex; gap:6px; flex-wrap:wrap; }
+  .atis-tab {
+    background:var(--panel); color:var(--dim); border:1px solid var(--line);
+    border-radius:6px; padding:5px 12px; font-family:var(--font); font-size:11px;
+    font-weight:700; letter-spacing:1.5px; cursor:pointer;
+  }
+  .atis-tab.active {
+    background:var(--panel2); color:var(--cyan); border-color:var(--cyan);
+    box-shadow:inset 0 -2px 0 var(--cyan);
+  }
+  .atis-body {
+    white-space:pre-wrap; max-height:140px; overflow-y:auto; color:var(--cyan);
+  }
+  .rwy-picker {
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px;
+  }
+  .rwy-picker .rp-label { font-size:10px; letter-spacing:2px; color:var(--dim); margin-right:4px; }
+  .rwy-btn {
+    background:var(--bg); color:var(--cyan); border:1px solid var(--line);
+    border-radius:8px; padding:8px 14px; font-family:var(--mono); font-size:14px;
+    cursor:pointer; display:inline-flex; align-items:center; gap:7px;
+  }
+  .rwy-btn .hdg { font-size:11px; color:var(--dim); }
+  .rwy-btn.best { border-color:rgba(45,255,110,.55); }
+  .rwy-btn.active {
+    background:var(--panel2); color:var(--green); border-color:var(--green);
+    box-shadow:inset 0 -3px 0 var(--green);
+  }
+  .rwy-btn.active .hdg { color:var(--text); }
+  label { display:flex; flex-direction:column; gap:5px; font-size:10px; letter-spacing:2px; color:var(--dim); }
+  input { width:100%; font-family:var(--mono); font-size:22px; color:var(--cyan); background:var(--bg);
+          border:1px solid var(--line); border-radius:8px; padding:10px; text-align:center; }
+  input:focus { outline:none; border-color:var(--amber); color:var(--amber); }
+  .wind-out { display:flex; gap:16px; align-items:center; margin-top:16px; }
+  svg { width:180px; height:180px; flex:0 0 auto; }
+  .res { flex:1; display:flex; flex-direction:column; gap:10px; }
+  .res div { display:flex; justify-content:space-between; align-items:baseline; font-family:var(--mono);
+             border-bottom:1px solid var(--line); padding-bottom:6px; }
+  .res .k { font-size:11px; letter-spacing:2px; color:var(--dim); }
+  .res .v { font-size:24px; color:var(--green); }
+  .res .v.warn { color:var(--amber); }
+  .conv { display:grid; grid-template-columns:1fr auto 1fr; gap:8px 10px; align-items:end; }
+  .conv .eq { color:var(--dim); padding-bottom:14px; }
+  .fuel { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .wide { grid-column:1 / -1; }
+  @media (max-width:820px) { .page { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <section class="wide">
+    <h2>WIND COMPONENTS, METAR & ATIS</h2>
+    <div class="metar-bar">
+      <div class="icao-wrap">
+        <label>AIRPORT (ICAO)<input id="icao" maxlength="4" placeholder="ICAO" value="" /></label>
+        <button type="button" class="btn-metar" id="btnFetchMetar">GET METAR</button>
+      </div>
+      <div class="metar-box empty" id="metarBox">
+        <span id="wxCat" class="wx-cat" hidden>VFR</span>
+        <span id="metarText">Enter an ICAO airport code and tap GET METAR to pull live METAR & ATIS.</span>
+      </div>
+    </div>
+    <div class="atis-box" id="atisBox" hidden></div>
+    <div class="rwy-picker" id="rwyPicker" hidden>
+      <span class="rp-label">SELECT RUNWAY:</span>
+      <div id="rwyButtons" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+    </div>
+    <div class="wind-out">
+      <svg viewBox="-100 -100 200 200" aria-hidden="true">
+        <circle r="92" fill="none" stroke="#1f3d63" stroke-width="2" />
+        <text y="-78" text-anchor="middle" fill="#7f97b5" font-size="12" font-family="B612 Mono">RWY</text>
+        <rect x="-11" y="-60" width="22" height="120" fill="#22344d" stroke="#e6f1ff" stroke-width="2" />
+        <line x1="0" y1="-50" x2="0" y2="40" stroke="#e6f1ff" stroke-width="2" stroke-dasharray="8 8" />
+        <text id="rwyNum" y="76" text-anchor="middle" fill="#e6f1ff" font-size="13" font-family="B612 Mono"></text>
+        <g id="arrow">
+          <line x1="0" y1="-92" x2="0" y2="-30" stroke="#19d3ff" stroke-width="5" />
+          <polygon points="0,-22 -10,-40 10,-40" fill="#19d3ff" />
+        </g>
+      </svg>
+      <div class="res">
+        <div><span class="k" id="hwK">HEADWIND</span><span class="v" id="hw">—</span></div>
+        <div><span class="k" id="xwK">CROSSWIND</span><span class="v" id="xw">—</span></div>
+        <div><span class="k">GUST HW / XW</span><span class="v" id="gust">—</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>UNIT CONVERSIONS</h2>
+    <div class="conv" id="conv"></div>
+  </section>
+
+  <section>
+    <h2>FUEL VOLUME ⇄ MASS</h2>
+    <div class="fuel">
+      <label>LITRES<input id="fL" inputmode="decimal" /></label>
+      <label>US GAL<input id="fG" inputmode="decimal" /></label>
+      <label>KG<input id="fKg" inputmode="decimal" /></label>
+      <label>LB<input id="fLb" inputmode="decimal" /></label>
+      <label class="wide">DENSITY KG/L (Jet A-1 ≈ 0.80)<input id="fD" inputmode="decimal" value="0.80" /></label>
+    </div>
+  </section>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const num = (el) => parseFloat(String(el.value).replace(',', '.'));
+const rad = (d) => d * Math.PI / 180;
+const LS_LAST_ICAO = 'efb.calc.lastIcao.v1';
+
+let runwaysDB = {};
+let currentAirportRunways = []; // [{ ident: '26L', hdg: 258 }, ...]
+let selectedRwyIdent = '';
+let windDir = NaN, windSpd = NaN, windGst = NaN;
+
+// Restore last entered airport (no hardcoded EGKK default)
+const savedIcao = localStorage.getItem(LS_LAST_ICAO) || '';
+$('icao').value = savedIcao;
+
+/* ---------- wind ---------- */
+function wind() {
+  const matchRwy = currentAirportRunways.find((r) => r.ident === selectedRwyIdent) || currentAirportRunways[0];
+  const hdg = matchRwy ? matchRwy.hdg : NaN;
+  if (matchRwy) selectedRwyIdent = matchRwy.ident;
+  $('rwyNum').textContent = matchRwy ? matchRwy.ident : '—';
+
+  const dir = windDir, spd = windSpd, gst = windGst;
+  if ([hdg, dir, spd].some(isNaN)) {
+    ['hw', 'xw', 'gust'].forEach((i) => ($(i).textContent = '—'));
+    renderRunwayButtons();
+    return;
+  }
+  const ang = rad(dir - hdg);
+  const hw = spd * Math.cos(ang), xw = spd * Math.sin(ang);
+  $('hwK').textContent = hw >= 0 ? 'HEADWIND' : 'TAILWIND';
+  $('hw').textContent = Math.abs(hw).toFixed(0) + ' KT';
+  $('hw').classList.toggle('warn', hw < -0.5);
+  $('xwK').textContent = 'CROSSWIND ' + (Math.abs(xw) < 0.5 ? '' : xw > 0 ? 'FROM RIGHT' : 'FROM LEFT');
+  $('xw').textContent = Math.abs(xw).toFixed(0) + ' KT';
+  $('xw').classList.toggle('warn', Math.abs(xw) >= 20);
+  if (!isNaN(gst)) {
+    $('gust').textContent = `${(gst * Math.cos(ang)).toFixed(0)} / ${Math.abs(gst * Math.sin(ang)).toFixed(0)} KT`;
+  } else $('gust').textContent = '—';
+  $('arrow').setAttribute('transform', `rotate(${dir - hdg})`);
+  renderRunwayButtons();
+}
+
+function updateAirportRunways(autoPickBest = false) {
+  const code = ($('icao').value || '').trim().toUpperCase();
+  const list = runwaysDB[code] || [];
+  currentAirportRunways = list.map((entry) => {
+    const [ident, h] = entry.split(':');
+    return { ident, hdg: parseInt(h, 10) };
+  });
+  $('rwyPicker').hidden = currentAirportRunways.length === 0;
+  if (!currentAirportRunways.length) {
+    selectedRwyIdent = '';
+    wind();
+    return;
+  }
+
+  if (autoPickBest && !isNaN(windDir)) {
+    let best = currentAirportRunways[0], bestCos = -2;
+    for (const r of currentAirportRunways) {
+      const c = Math.cos(rad(windDir - r.hdg));
+      if (c > bestCos) { bestCos = c; best = r; }
+    }
+    selectedRwyIdent = best.ident;
+  } else if (!currentAirportRunways.some((r) => r.ident === selectedRwyIdent)) {
+    selectedRwyIdent = currentAirportRunways[0].ident;
+  }
+  wind();
+}
+
+function renderRunwayButtons() {
+  const wrap = $('rwyButtons');
+  if (!wrap) return;
+  wrap.textContent = '';
+  let bestIdent = null, bestCos = -2;
+  if (!isNaN(windDir)) {
+    for (const r of currentAirportRunways) {
+      const c = Math.cos(rad(windDir - r.hdg));
+      if (c > bestCos) { bestCos = c; bestIdent = r.ident; }
+    }
+  }
+  currentAirportRunways.forEach((r) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    const isAct = r.ident === selectedRwyIdent;
+    const isBest = r.ident === bestIdent;
+    b.className = 'rwy-btn' + (isAct ? ' active' : '') + (isBest ? ' best' : '');
+    b.innerHTML = `<span>RWY ${r.ident}</span><span class="hdg">${String(r.hdg).padStart(3, '0')}°</span>`;
+    b.onclick = () => {
+      selectedRwyIdent = r.ident;
+      wind();
+    };
+    wrap.appendChild(b);
+  });
+}
+
+$('icao').addEventListener('input', () => {
+  const val = ($('icao').value || '').trim().toUpperCase();
+  localStorage.setItem(LS_LAST_ICAO, val);
+  updateAirportRunways(false);
+});
+
+fetch('../vendor/runways.json')
+  .then((r) => r.json())
+  .then((db) => {
+    runwaysDB = db || {};
+    updateAirportRunways(false);
+    if ($('icao').value.trim().length >= 3) fetchMetar();
+  })
+  .catch(() => wind());
+
+/* ---------- live VATSIM ATIS first, fallback to real-life D-ATIS (atis.guru) ---------- */
+function classifyAtisItem(rawText, callsign = '', infoCode = '', freq = '') {
+  const lines = rawText.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+  let body;
+  if (lines.length > 1 && /^[A-Z0-9]{4}\s+(ARR|DEP|COM)?\s*ATIS\b/i.test(lines[0])) {
+    body = lines[0] + ' — ' + lines.slice(1).join(' ').replace(/\s{2,}/g, ' ');
+  } else {
+    body = lines.join(' ').replace(/\s{2,}/g, ' ');
+  }
+
+  let type = 'ATIS';
+  if (/_A_ATIS$/i.test(callsign) || /\bARR(IVAL)?\s+ATIS\b/i.test(rawText)) type = 'ARR ATIS';
+  else if (/_D_ATIS$/i.test(callsign) || /\bDEP(ARTURE)?\s+ATIS\b/i.test(rawText)) type = 'DEP ATIS';
+
+  let letter = infoCode || '';
+  if (!letter) {
+    const m = rawText.match(/\b(?:ATIS(?:\s+INFO(?:RMATION)?)?|INFORMATION)\s+([A-Z])\b/i);
+    if (m) letter = m[1].toUpperCase();
+  }
+
+  const label = letter ? `${type} (${letter})` : type;
+  const prefix = [callsign, freq ? `${freq}` : ''].filter(Boolean).join(' · ');
+  return {
+    type,
+    label,
+    text: prefix ? `${prefix} — ${body}` : body,
+  };
+}
+
+async function fetchVatsimAtis(code) {
+  try {
+    const r = await fetch(`https://data.vatsim.net/v3/vatsim-data.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (!r.ok) return [];
+    const data = await r.json();
+    const matches = (data.atis || []).filter(
+      (a) => a.callsign && a.callsign.toUpperCase().startsWith(code + '_') && Array.isArray(a.text_atis) && a.text_atis.length > 0
+    );
+    return matches.map((a) =>
+      classifyAtisItem(a.text_atis.join(' '), a.callsign, a.atis_code || '', a.frequency || '')
+    );
+  } catch {
+    return [];
+  }
+}
+
+function parseAtisGuruHtml(html) {
+  if (!html || !html.includes('class="atis"')) return [];
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const els = [...doc.querySelectorAll('div.atis')];
+    doc.querySelectorAll('template').forEach((tpl) => {
+      els.push(...tpl.content.querySelectorAll('div.atis'));
+    });
+    const blocks = els
+      .map((el) => el.textContent.replace(/\r/g, '').replace(/[ \t]+\n/g, '\n').trim())
+      .filter((t) => t && !/^(METAR|TAF)\b/i.test(t));
+    if (blocks.length) {
+      return blocks.map((b) => classifyAtisItem(b));
+    }
+  } catch {}
+  return [];
+}
+
+async function fetchAtisGuru(code) {
+  const targetUrl = `https://atis.guru/atis/${encodeURIComponent(code)}`;
+
+  // 1. In the Android tablet app, use the native fetch bridge (bypasses CORS, no PC server needed)
+  if (window.parent && window.parent.EFBNative && typeof window.parent.EFBNative.fetchUrl === 'function') {
+    try {
+      const html = window.parent.EFBNative.fetchUrl(targetUrl);
+      const parsed = parseAtisGuruHtml(html);
+      if (parsed.length > 0) return parsed;
+    } catch {}
+  }
+
+  // 2. Otherwise try local server proxy, direct fetch, or CORS proxy
+  const urls = [
+    `${window.parent && window.parent.EFBNative ? 'http://192.168.4.37/' : '../'}api/atis?icao=${encodeURIComponent(code)}&t=${Date.now()}`,
+    targetUrl,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+  ];
+  for (const u of urls) {
+    try {
+      const r = await fetch(u, { cache: 'no-store' });
+      if (!r.ok) continue;
+      const html = await r.text();
+      const parsed = parseAtisGuruHtml(html);
+      if (parsed.length > 0) return parsed;
+    } catch {}
+  }
+  return [];
+}
+
+async function fetchBestAtis(code) {
+  // 1. Try VATSIM online ATIS first
+  const vatsimItems = await fetchVatsimAtis(code);
+  if (vatsimItems.length > 0) {
+    return { source: 'vatsim', items: vatsimItems };
+  }
+  // 2. Fallback to real-world D-ATIS from atis.guru
+  const realItems = await fetchAtisGuru(code);
+  if (realItems.length > 0) {
+    return { source: 'real', items: realItems };
+  }
+  return { source: 'none', items: [] };
+}
+
+let currentAtisTab = 0;
+function renderAtisResult(result) {
+  const box = $('atisBox');
+  box.textContent = '';
+  if (!result || !result.items || !result.items.length) {
+    box.hidden = true;
+    return;
+  }
+  if (currentAtisTab >= result.items.length) currentAtisTab = 0;
+
+  const head = document.createElement('div');
+  head.className = 'atis-head';
+
+  const badge = document.createElement('span');
+  badge.className = 'atis-src' + (result.source === 'real' ? ' real' : '');
+  badge.textContent = result.source === 'vatsim' ? 'VATSIM ATIS' : 'REAL D-ATIS (NO VATSIM ATIS)';
+  head.appendChild(badge);
+
+  const tabs = document.createElement('div');
+  tabs.className = 'atis-tabs';
+  result.items.forEach((item, idx) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'atis-tab' + (idx === currentAtisTab ? ' active' : '');
+    b.textContent = item.label;
+    b.onclick = () => {
+      currentAtisTab = idx;
+      renderAtisResult(result);
+    };
+    tabs.appendChild(b);
+  });
+  head.appendChild(tabs);
+
+  const body = document.createElement('div');
+  body.className = 'atis-body';
+  body.textContent = result.items[currentAtisTab].text;
+
+  box.append(head, body);
+  box.hidden = false;
+}
+
+async function fetchMetar() {
+  const code = ($('icao').value || '').trim().toUpperCase();
+  const box = $('metarBox'), txt = $('metarText'), cat = $('wxCat'), btn = $('btnFetchMetar');
+  if (!/^[A-Z0-9]{3,4}$/.test(code)) {
+    box.className = 'metar-box err';
+    cat.hidden = true;
+    $('atisBox').hidden = true;
+    txt.textContent = 'Please enter a valid 4-letter ICAO code (e.g. EGKK).';
+    return;
+  }
+  localStorage.setItem(LS_LAST_ICAO, code);
+  btn.disabled = true;
+  btn.textContent = 'LOADING...';
+  box.className = 'metar-box empty';
+  cat.hidden = true;
+  $('atisBox').hidden = true;
+  txt.textContent = `Fetching METAR & ATIS for ${code}...`;
+
+  // Kick off ATIS fetch in parallel (VATSIM first, fallback to atis.guru)
+  currentAtisTab = 0;
+  fetchBestAtis(code).then((result) => {
+    if (($('icao').value || '').trim().toUpperCase() === code) {
+      renderAtisResult(result);
+    }
+  });
+
+  try {
+    let raw = '';
+    try {
+      const r = await fetch(`https://metar.vatsim.net/${encodeURIComponent(code)}?t=${Date.now()}`, { cache: 'no-store' });
+      if (r.ok) raw = (await r.text()).trim();
+    } catch {}
+    if (!raw || raw.length < 10) {
+      const url = `https://aviationweather.gov/api/data/metar?ids=${encodeURIComponent(code)}`;
+      if (window.parent && window.parent.EFBNative && typeof window.parent.EFBNative.fetchUrl === 'function') {
+        try { raw = window.parent.EFBNative.fetchUrl(url).trim(); } catch {}
+      }
+      if (!raw || raw.length < 10) {
+        try {
+          const r2 = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, { cache: 'no-store' });
+          if (r2.ok) raw = (await r2.text()).trim();
+        } catch {}
+      }
+    }
+    raw = (raw || '').split(/\r?\n/)[0].trim();
+    if (!raw || !raw.startsWith(code)) {
+      throw new Error(`No current METAR found for ${code}`);
+    }
+
+    box.className = 'metar-box';
+    txt.textContent = raw;
+
+    // Parse wind token: e.g. 24015KT, 24015G28KT, VRB03KT, 00000KT, or MPS
+    const wm = raw.match(/\b(\d{3}|VRB)(\d{2,3})(?:G(\d{2,3}))?(KT|MPS)\b/);
+    if (wm) {
+      const [, dir, spdStr, gstStr, unit] = wm;
+      const factor = unit === 'MPS' ? 1.94384 : 1;
+      windDir = dir !== 'VRB' ? parseInt(dir, 10) : 0;
+      windSpd = Math.round(parseInt(spdStr, 10) * factor);
+      windGst = gstStr ? Math.round(parseInt(gstStr, 10) * factor) : NaN;
+      updateAirportRunways(true);
+    } else {
+      windDir = NaN; windSpd = NaN; windGst = NaN;
+      updateAirportRunways(false);
+    }
+
+    // Simple flight category badge (VFR / MVFR / IFR / LIFR)
+    const fc = parseFlightCat(raw);
+    cat.textContent = fc;
+    cat.className = 'wx-cat ' + fc;
+    cat.hidden = false;
+  } catch (err) {
+    box.className = 'metar-box err';
+    cat.hidden = true;
+    txt.textContent = err.message || 'Could not fetch METAR.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'GET METAR';
+  }
+}
+
+function parseFlightCat(metar) {
+  let cig = 99999;
+  const clouds = metar.matchAll(/\b(BKN|OVC|VV)(\d{3})\b/g);
+  for (const m of clouds) cig = Math.min(cig, parseInt(m[2], 10) * 100);
+  let visMeters = 9999;
+  if (/\bCAVOK\b/.test(metar)) visMeters = 9999;
+  else {
+    const sm = metar.match(/\b(\d+)\s*SM\b/);
+    const m4 = metar.match(/\s(\d{4})\s/);
+    if (sm) visMeters = parseFloat(sm[1]) * 1609.34;
+    else if (m4) visMeters = parseInt(m4[1], 10);
+  }
+  if (cig < 500 || visMeters < 1600) return 'LIFR';
+  if (cig < 1000 || visMeters < 4800) return 'IFR';
+  if (cig <= 3000 || visMeters <= 8000) return 'MVFR';
+  return 'VFR';
+}
+
+$('btnFetchMetar').addEventListener('click', fetchMetar);
+$('icao').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); fetchMetar(); } });
+
+/* ---------- unit conversions ---------- */
+const PAIRS = [
+  ['KG', 'LB', (x) => x * 2.20462, (x) => x / 2.20462],
+  ['HPA', 'INHG', (x) => x / 33.8639, (x) => x * 33.8639, 2],
+  ['°C', '°F', (x) => x * 9 / 5 + 32, (x) => (x - 32) * 5 / 9],
+  ['M', 'FT', (x) => x * 3.28084, (x) => x / 3.28084],
+  ['KM', 'NM', (x) => x / 1.852, (x) => x * 1.852],
+  ['KT', 'KM/H', (x) => x * 1.852, (x) => x / 1.852],
+  ['LITRES', 'US GAL', (x) => x / 3.78541, (x) => x * 3.78541],
+];
+const fmt = (v, dp = 1) => (isFinite(v) ? (+v.toFixed(dp)).toString() : '');
+PAIRS.forEach(([a, b, toB, toA, dp]) => {
+  const c = $('conv');
+  const la = document.createElement('label'), lb = document.createElement('label'), eq = document.createElement('span');
+  la.textContent = a; lb.textContent = b; eq.textContent = '⇄'; eq.className = 'eq';
+  const ia = document.createElement('input'), ib = document.createElement('input');
+  ia.inputMode = ib.inputMode = 'decimal';
+  la.appendChild(ia); lb.appendChild(ib);
+  ia.oninput = () => { ib.value = ia.value === '' ? '' : fmt(toB(num(ia)), dp ?? 1); };
+  ib.oninput = () => { ia.value = ib.value === '' ? '' : fmt(toA(num(ib)), 1); };
+  c.append(la, eq, lb);
+});
+
+/* ---------- fuel ---------- */
+const USG = 3.78541, LB = 2.20462;
+function fuelFrom(src) {
+  const d = num($('fD')) || 0.8;
+  let L;
+  if (src === 'fL') L = num($('fL'));
+  if (src === 'fG') L = num($('fG')) * USG;
+  if (src === 'fKg') L = num($('fKg')) / d;
+  if (src === 'fLb') L = num($('fLb')) / LB / d;
+  if (src === 'fD') L = num($('fL'));
+  const out = { fL: L, fG: L / USG, fKg: L * d, fLb: L * d * LB };
+  for (const k in out) if (k !== src) $(k).value = isFinite(out[k]) ? Math.round(out[k]) : '';
+}
+['fL', 'fG', 'fKg', 'fLb', 'fD'].forEach((id) => $(id).addEventListener('input', () => fuelFrom(id)));
+</script>
+</body>
+</html>
