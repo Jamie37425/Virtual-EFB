@@ -41,7 +41,8 @@ Virtual EFB runs as a **standalone, full-screen Android tablet application** pai
 2. Extract the `.zip` archive anywhere on your PC (e.g., `C:\Virtual-EFB` or in your Documents folder).
 3. Drop your aircraft `.pdf` checklist files into the extracted `checklists/` folder (you can also organize them in subfolders like `checklists/A320/normal.pdf`).
 4. Double-click **`Start-EFB.bat`**:
-   * A clean PC status dashboard will open in your browser displaying your PC's local Wi-Fi IP address (e.g., `192.168.1.50`).
+   * The EFB web interface will open directly in your browser (`http://localhost/`), and the local Wi-Fi sync server will start in the background.
+   * *(Note: The desktop web version is mainly intended to customize your apps, upload custom logo images from your PC files, and view checklists. External flight simulation tools that block iframe embedding require the dedicated Android tablet app).*
 
 ### Step 2: Install the App on your Android Tablet (Over Local Wi-Fi)
 1. On your Android tablet, open any web browser (Chrome, Samsung Internet, Firefox).
@@ -98,7 +99,7 @@ The compiled, aligned, and signed `EFB.apk` will be output directly to the root 
 
 ```text
 ├── EFB.apk                 # Pre-built standalone Android app installer
-├── Start-EFB.bat           # One-click launcher for the PC sync companion server
+├── Start-EFB.bat           # 1-click launcher for the PC web version & sync server
 ├── screenshot.jpg          # Application interface preview
 ├── index.html              # EFB launcher UI (bundled inside the Android app)
 ├── css/                    # Cockpit theme styling

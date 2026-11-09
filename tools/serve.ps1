@@ -1,4 +1,4 @@
-﻿# Tiny local web server for running the EFB on this PC (http://localhost) and on any tablet (https://192.168.x.x).
+# Tiny local web server for running the EFB on this PC (http://localhost) and on any tablet (https://192.168.x.x).
 # Listens on Port 80 (HTTP) and Port 443 (HTTPS) simultaneously so NO port number is ever needed in the URL,
 # and tablets get a full Secure Context (https://) required by Navigraph Charts (WebCrypto) and VATSIM Radar.
 param([int]$Port = 80, [int]$HttpsPort = 443)
@@ -396,7 +396,8 @@ function Sync-ChecklistFolder {
     if ($path -eq 'checklists/index.json') {
       Sync-ChecklistFolder
     }
-    if ($path -eq '' -or $path -eq 'index.html') { $path = 'tools\companion.html' }
+    if ($path -eq '') { $path = 'index.html' }
+    if ($path -eq 'companion' -or $path -eq 'companion.html' -or $path -eq 'status') { $path = 'tools\companion.html' }
     $file = [System.IO.Path]::GetFullPath((Join-Path $root $path))
     if ($file.StartsWith($root) -and (Test-Path $file -PathType Leaf)) {
       $bytes = [System.IO.File]::ReadAllBytes($file)
