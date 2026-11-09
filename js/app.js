@@ -966,6 +966,13 @@
   });
 
   /* ================= START ================= */
+  window.addEventListener('message', (e) => {
+    if (e?.data?.type === 'simbrief-callsign-updated' && e.data.callsign) {
+      settings.callsign = e.data.callsign;
+      saveSettings();
+      applySettings();
+    }
+  });
   applySettings();
   syncWithServer();
   window.addEventListener('focus', syncWithServer);
