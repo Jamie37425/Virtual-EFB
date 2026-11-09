@@ -13,7 +13,10 @@ Virtual EFB runs as a **standalone, full-screen Android tablet application** pai
 ### ✈️ Cockpit Design & Avionics Aesthetic
 * **Cockpit Theme**: Sleek, high-contrast dark cockpit aesthetic utilizing **B612**—the open-source font designed for aircraft cockpit displays.
 * **Status Bar**: Real-time **UTC (Zulu) clock**, live date, battery monitor, night-dimming slider, and screen wake-lock toggle.
-* **SimBrief Integration**: Enter your SimBrief Pilot ID to automatically fetch your active flight plan callsign, origin, and destination directly into the top bar.
+
+### ✈️ SimBrief & Navigraph Flight Integration
+* **Callsign Sync**: Enter your **SimBrief Pilot ID** (or username) in the **Settings** (⚙) tab and tap **FETCH** to pull through your active OFP callsign directly into the top-left of the EFB header.
+* **Wind & Conversions Active Flight Banner**: In the **Wind & Conv** app, an active flight banner displays your route (e.g. `EGKK → EIDW`). Tapping the **`↻`** (Refresh) button next to the flight details pulls through your latest SimBrief flight plan, updates your top-left callsign, and automatically imports all Navigraph departure and arrival runway magnetic headings with one-tap `DEP` and `ARR` loading.
 
 ### 📱 Dedicated Android Tablet Application
 * **Standalone Android APK**: Runs completely full-screen with immersive mode enabled. Includes an AssistiveTouch / iPad-style floating home button that can be freely dragged anywhere on the screen.
@@ -64,6 +67,12 @@ Virtual EFB runs as a **standalone, full-screen Android tablet application** pai
 3. All checklists from your PC's `checklists/` folder will immediately sync to your tablet over your home Wi-Fi!
 
 *(Optional: To run the PC sync server silently in the background on Windows startup, place a shortcut to `tools/start-background-server.vbs` in your Windows Startup folder: press `Win + R`, type `shell:startup`, and paste the shortcut).*
+
+### Step 4: Link SimBrief (Optional)
+1. Tap ⚙ **Settings** on the top bar.
+2. In the **SIMBRIEF PILOT ID** field, enter your numeric Pilot ID (or SimBrief username) and tap **FETCH**.
+3. Your active OFP callsign will immediately appear in the top-left of the EFB header.
+4. Open the **Wind & Conv** app and tap the **`↻`** (Refresh) button: it will pull through your current callsign, departure airport, and arrival airport, automatically loading the runways and Navigraph magnetic headings.
 
 ---
 
