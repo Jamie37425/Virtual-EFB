@@ -15,19 +15,50 @@
   h2 { margin:0 0 14px; font-size:15px; letter-spacing:3px; color:var(--dim); font-weight:400; }
   h2::before { content:"■ "; color:var(--cyan); }
   .fields { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+
+  /* SimBrief Active Flight Banner */
+  .sb-flight-bar {
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+    background:rgba(25,211,255,0.06); border:1px solid rgba(25,211,255,0.25);
+    border-radius:8px; padding:8px 12px; margin-bottom:12px;
+  }
+  .sfb-info { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .sfb-badge {
+    background:var(--cyan); color:var(--bg); font-size:10px; font-weight:700;
+    letter-spacing:1px; padding:3px 7px; border-radius:4px;
+  }
+  .sfb-route { font-family:var(--mono); font-size:13px; color:var(--text); font-weight:700; }
+  .sfb-buttons { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .btn-sfb {
+    background:var(--panel2); color:var(--cyan); border:1px solid var(--cyan);
+    border-radius:6px; padding:6px 12px; font-family:var(--mono); font-size:12px;
+    font-weight:700; cursor:pointer;
+  }
+  .btn-sfb:active { background:rgba(25,211,255,0.2); }
+  .btn-sfb-icon {
+    background:var(--panel); color:var(--dim); border:1px solid var(--line);
+    border-radius:6px; padding:6px 10px; font-size:13px; cursor:pointer;
+  }
+  .btn-sfb-icon:active { color:var(--cyan); }
+
   .metar-bar {
     display:flex; gap:10px; align-items:flex-end; margin-bottom:12px; flex-wrap:wrap;
   }
-  .metar-bar .icao-wrap { display:flex; gap:8px; align-items:flex-end; }
-  .metar-bar input#icao { width:130px; height:48px; text-transform:uppercase; letter-spacing:2px; padding:0 10px; }
+  .metar-bar .icao-wrap { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; }
+  .metar-bar input#icao { width:110px; height:48px; text-transform:uppercase; letter-spacing:2px; padding:0 10px; }
   .btn-metar {
-    width:130px; height:48px; padding:0; border-radius:8px; border:1px solid var(--amber);
+    height:48px; padding:0 14px; border-radius:8px; border:1px solid var(--amber);
     background:var(--panel2); color:var(--amber); font-family:var(--font);
     font-size:12px; letter-spacing:2px; cursor:pointer; white-space:nowrap;
     display:inline-flex; align-items:center; justify-content:center;
   }
   .btn-metar:active { background:rgba(255,179,0,.18); }
   .btn-metar:disabled { opacity:.5; cursor:default; }
+  .btn-sb-sync {
+    border-color:var(--cyan); color:var(--cyan);
+  }
+  .btn-sb-sync:active { background:rgba(25,211,255,0.18); }
+
   .metar-box {
     flex:1; min-width:240px; min-height:48px; background:var(--bg); border:1px solid var(--line);
     border-radius:8px; padding:8px 12px; display:flex; align-items:center; gap:10px;
@@ -168,10 +199,25 @@
 <div class="page">
   <section class="wide">
     <h2>WIND COMPONENTS, METAR & ATIS</h2>
+
+    <!-- Active SimBrief Flight Banner -->
+    <div class="sb-flight-bar" id="sbFlightBar" hidden>
+      <div class="sfb-info">
+        <span class="sfb-badge">NAVIGRAPH / SIMBRIEF</span>
+        <span class="sfb-route" id="sfbRoute">—</span>
+      </div>
+      <div class="sfb-buttons">
+        <button type="button" class="btn-sfb" id="btnLoadDep" title="Load Departure Airport and Runway">DEP: <span id="sfbDepTxt">—</span></button>
+        <button type="button" class="btn-sfb" id="btnLoadArr" title="Load Arrival Airport and Runway">ARR: <span id="sfbArrTxt">—</span></button>
+        <button type="button" class="btn-sfb-icon" id="btnRefreshFlight" title="Refresh SimBrief OFP">↻</button>
+      </div>
+    </div>
+
     <div class="metar-bar">
       <div class="icao-wrap">
         <label>AIRPORT (ICAO)<input id="icao" maxlength="4" placeholder="ICAO" value="" /></label>
         <button type="button" class="btn-metar" id="btnFetchMetar">GET METAR</button>
+        <button type="button" class="btn-metar btn-sb-sync" id="btnSyncSimbrief" title="Import active flight & Navigraph runways from SimBrief">✈ SIMBRIEF</button>
       </div>
       <div class="metar-box empty" id="metarBox">
         <span id="wxCat" class="wx-cat" hidden>VFR</span>
@@ -331,6 +377,17 @@ function deleteCustomRunway(icao, ident) {
       localStorage.setItem(LS_CUSTOM_RWYS, JSON.stringify(all));
     } catch {}
   }
+}
+
+function getSimbriefId() {
+  try {
+    const raw = (window.parent && window.parent.localStorage ? window.parent.localStorage.getItem('efb.settings.v1') : localStorage.getItem('efb.settings.v1'));
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s && s.simbriefId) return String(s.simbriefId).trim();
+    }
+  } catch {}
+  return '';
 }
 
 // Restore last entered airport
@@ -559,14 +616,170 @@ $('icao').addEventListener('input', () => {
   updateAirportRunways(false);
 });
 
+/* ---------- SimBrief / Navigraph active flight integration ---------- */
+function loadStoredSimbriefFlight() {
+  let flight = null;
+  try {
+    const raw = (window.parent && window.parent.localStorage ? window.parent.localStorage.getItem('efb.simbrief.activeFlight') : localStorage.getItem('efb.simbrief.activeFlight'));
+    if (raw) flight = JSON.parse(raw);
+  } catch {}
+  renderSimbriefFlightBar(flight);
+}
+
+function renderSimbriefFlightBar(flight) {
+  const bar = $('sbFlightBar');
+  if (!flight || (!flight.orig && !flight.dest)) {
+    bar.hidden = true;
+    return;
+  }
+  bar.hidden = false;
+  const cs = flight.callsign ? flight.callsign + ' · ' : '';
+  $('sfbRoute').textContent = `${cs}${flight.orig || '???'} → ${flight.dest || '???'}`;
+  $('sfbDepTxt').textContent = (flight.orig || '—') + (flight.origRwy ? ` (${flight.origRwy})` : '');
+  $('sfbArrTxt').textContent = (flight.dest || '—') + (flight.destRwy ? ` (${flight.destRwy})` : '');
+
+  // Apply any Navigraph runways from flight plan into local overrides
+  if (flight.runways && Object.keys(flight.runways).length > 0) {
+    const ov = getOverrides();
+    let changed = false;
+    for (const [k, v] of Object.entries(flight.runways)) {
+      if (ov[k] !== v) { ov[k] = v; changed = true; }
+    }
+    if (changed) {
+      try { localStorage.setItem(LS_RWY_OVERRIDES, JSON.stringify(ov)); } catch {}
+    }
+  }
+}
+
+async function syncSimbrief(promptIfMissing = true) {
+  let id = getSimbriefId();
+  if (!id && promptIfMissing) {
+    const entered = prompt('Please enter your SimBrief Pilot ID or Username:');
+    if (entered && entered.trim()) {
+      id = entered.trim();
+      try {
+        if (window.parent && window.parent.localStorage) {
+          const s = JSON.parse(window.parent.localStorage.getItem('efb.settings.v1') || '{}');
+          s.simbriefId = id;
+          window.parent.localStorage.setItem('efb.settings.v1', JSON.stringify(s));
+        }
+        const s = JSON.parse(localStorage.getItem('efb.settings.v1') || '{}');
+        s.simbriefId = id;
+        localStorage.setItem('efb.settings.v1', JSON.stringify(s));
+      } catch {}
+    }
+  }
+  if (!id) return;
+
+  const btn = $('btnSyncSimbrief');
+  if (btn) { btn.disabled = true; btn.textContent = 'FETCHING...'; }
+
+  try {
+    const param = /^\d+$/.test(id) ? `userid=${encodeURIComponent(id)}` : `username=${encodeURIComponent(id)}`;
+    const url = `https://www.simbrief.com/api/xml.fetcher.php?${param}&json=1&t=${Date.now()}`;
+    let data = null;
+
+    if (window.parent && window.parent.EFBNative && typeof window.parent.EFBNative.fetchUrl === 'function') {
+      try {
+        data = JSON.parse(window.parent.EFBNative.fetchUrl(url));
+      } catch {}
+    }
+    if (!data) {
+      const urls = [url, `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`];
+      for (const u of urls) {
+        try {
+          const r = await fetch(u, { cache: 'no-store' });
+          if (r.ok) { data = await r.json(); break; }
+        } catch {}
+      }
+    }
+
+    if (!data || data?.fetch?.status !== 'Success') {
+      throw new Error(data?.fetch?.status || 'No active SimBrief flight plan found');
+    }
+
+    const cs = (data?.atc?.callsign || '').trim().toUpperCase();
+    const orig = (data?.origin?.icao_code || data?.general?.orig || '').trim().toUpperCase();
+    const origRwy = (data?.origin?.plan_rwy || data?.general?.origrwy || '').trim().toUpperCase();
+    const dest = (data?.destination?.icao_code || data?.general?.dest || '').trim().toUpperCase();
+    const destRwy = (data?.destination?.plan_rwy || data?.general?.destrwy || '').trim().toUpperCase();
+
+    const toList = (x) => (!x ? [] : Array.isArray(x) ? x : [x]);
+    const runwaysFound = {};
+    toList(data?.tlr?.takeoff?.runway).forEach((r) => {
+      const rid = (r.identifier || '').trim().toUpperCase();
+      const mag = parseInt(r.magnetic_course || r.mag_course || r.heading_mag, 10);
+      if (orig && rid && !isNaN(mag) && mag >= 1 && mag <= 360) runwaysFound[`${orig}:${rid}`] = mag;
+    });
+    toList(data?.tlr?.landing?.runway).forEach((r) => {
+      const rid = (r.identifier || '').trim().toUpperCase();
+      const mag = parseInt(r.magnetic_course || r.mag_course || r.heading_mag, 10);
+      if (dest && rid && !isNaN(mag) && mag >= 1 && mag <= 360) runwaysFound[`${dest}:${rid}`] = mag;
+    });
+
+    const flightInfo = { callsign: cs, orig, origRwy, dest, destRwy, runways: runwaysFound, updatedAt: Date.now() };
+    try {
+      if (window.parent && window.parent.localStorage) {
+        window.parent.localStorage.setItem('efb.simbrief.activeFlight', JSON.stringify(flightInfo));
+      }
+      localStorage.setItem('efb.simbrief.activeFlight', JSON.stringify(flightInfo));
+    } catch {}
+
+    renderSimbriefFlightBar(flightInfo);
+
+    // If current airport is empty, load departure airport
+    if (!$('icao').value.trim() && orig) {
+      loadAirportAndRunway(orig, origRwy);
+    }
+  } catch (err) {
+    alert('SimBrief: ' + (err.message || 'Could not fetch flight plan'));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✈ SIMBRIEF'; }
+  }
+}
+
+function loadAirportAndRunway(icao, rwyIdent) {
+  if (!icao) return;
+  $('icao').value = icao;
+  localStorage.setItem(LS_LAST_ICAO, icao);
+  if (rwyIdent) selectedRwyIdent = rwyIdent;
+  updateAirportRunways(false);
+  fetchMetar();
+}
+
+$('btnLoadDep').addEventListener('click', () => {
+  let flight = null;
+  try {
+    const raw = (window.parent && window.parent.localStorage ? window.parent.localStorage.getItem('efb.simbrief.activeFlight') : localStorage.getItem('efb.simbrief.activeFlight'));
+    if (raw) flight = JSON.parse(raw);
+  } catch {}
+  if (flight && flight.orig) loadAirportAndRunway(flight.orig, flight.origRwy);
+});
+
+$('btnLoadArr').addEventListener('click', () => {
+  let flight = null;
+  try {
+    const raw = (window.parent && window.parent.localStorage ? window.parent.localStorage.getItem('efb.simbrief.activeFlight') : localStorage.getItem('efb.simbrief.activeFlight'));
+    if (raw) flight = JSON.parse(raw);
+  } catch {}
+  if (flight && flight.dest) loadAirportAndRunway(flight.dest, flight.destRwy);
+});
+
+$('btnRefreshFlight').addEventListener('click', () => syncSimbrief(false));
+$('btnSyncSimbrief').addEventListener('click', () => syncSimbrief(true));
+
 fetch('../vendor/runways.json')
   .then((r) => r.json())
   .then((db) => {
     runwaysDB = db || {};
+    loadStoredSimbriefFlight();
     updateAirportRunways(false);
     if ($('icao').value.trim().length >= 3) fetchMetar();
   })
-  .catch(() => wind());
+  .catch(() => {
+    loadStoredSimbriefFlight();
+    wind();
+  });
 
 /* ---------- live VATSIM ATIS first, fallback to real-life D-ATIS (atis.guru) ---------- */
 function classifyAtisItem(rawText, callsign = '', infoCode = '', freq = '') {

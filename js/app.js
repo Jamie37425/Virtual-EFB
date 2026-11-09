@@ -797,7 +797,43 @@
       saveSettings();
       applySettings();
       const orig = typeof data?.origin?.icao_code === 'string' ? data.origin.icao_code : '';
+      const origRwy = typeof data?.origin?.plan_rwy === 'string' ? data.origin.plan_rwy : '';
       const dest = typeof data?.destination?.icao_code === 'string' ? data.destination.icao_code : '';
+
+      const destRwy = typeof data?.destination?.plan_rwy === 'string' ? data.destination.plan_rwy : '';
+
+      // Extract Navigraph runway magnetic headings from SimBrief TLR
+      const toList = (x) => (!x ? [] : Array.isArray(x) ? x : [x]);
+      const runwaysFound = {};
+      toList(data?.tlr?.takeoff?.runway).forEach((r) => {
+        const id = (r.identifier || '').trim().toUpperCase();
+        const mag = parseInt(r.magnetic_course || r.mag_course || r.heading_mag, 10);
+        if (orig && id && !isNaN(mag) && mag >= 1 && mag <= 360) runwaysFound[`${orig}:${id}`] = mag;
+      });
+      toList(data?.tlr?.landing?.runway).forEach((r) => {
+        const id = (r.identifier || '').trim().toUpperCase();
+        const mag = parseInt(r.magnetic_course || r.mag_course || r.heading_mag, 10);
+        if (dest && id && !isNaN(mag) && mag >= 1 && mag <= 360) runwaysFound[`${dest}:${id}`] = mag;
+      });
+
+      const flightInfo = {
+        callsign: cs,
+        orig,
+        origRwy,
+        dest,
+        destRwy,
+        runways: runwaysFound,
+        updatedAt: Date.now()
+      };
+      try {
+        localStorage.setItem('efb.simbrief.activeFlight', JSON.stringify(flightInfo));
+        if (Object.keys(runwaysFound).length > 0) {
+          const ov = JSON.parse(localStorage.getItem('efb.calc.rwyOverrides.v1') || '{}');
+          Object.assign(ov, runwaysFound);
+          localStorage.setItem('efb.calc.rwyOverrides.v1', JSON.stringify(ov));
+        }
+      } catch {}
+
       const routeInfo = orig && dest ? ` (${orig} → ${dest})` : '';
       if (statusEl) {
         statusEl.style.color = 'var(--green)';
