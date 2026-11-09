@@ -976,6 +976,18 @@
   applySettings();
   syncWithServer();
   window.addEventListener('focus', syncWithServer);
+  if (!NATIVE && location.protocol.startsWith('http')) {
+    fetch('api/info?t=' + Date.now(), { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((info) => {
+        if (info && info.ip && $('btnServerIpPill')) {
+          $('btnServerIpPill').textContent = 'SYNC IP: ' + info.ip;
+          $('btnServerIpPill').hidden = false;
+          $('btnServerIpPill').onclick = () => $('btnSettings').click();
+        }
+      })
+      .catch(() => {});
+  }
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') syncWithServer();
   });
