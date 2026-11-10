@@ -1,4 +1,4 @@
-# Virtual EFB (Electronic Flight Bag)
+﻿# Virtual EFB (Electronic Flight Bag)
 
 An open-source Electronic Flight Bag designed for flight simulator enthusiasts (Microsoft Flight Simulator, X-Plane, Prepar3D).
 
