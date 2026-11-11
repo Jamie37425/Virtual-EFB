@@ -1,4 +1,4 @@
-/* =========================================================
+﻿/* =========================================================
    EFB launcher
    - Apps are websites (URLs) or HTML files stored on the device.
    - Embedded apps run in iframes that stay alive in the background,
@@ -10,7 +10,7 @@
 
   const VERSION = '1.0.0';
   const NATIVE = !!window.EFBNative;   // true when running inside the EFB Android app
-  const DEFAULT_STAMP = 1794183000000;
+  const DEFAULT_STAMP = 1794700000000;
   const LS_APPS = 'efb.apps.v1';
   const LS_SETTINGS = 'efb.settings.v1';
   const LS_STAMP = 'efb.stamp.v1';
@@ -20,7 +20,7 @@
     '#d97706', '#dc2626', '#c026d3', '#7c3aed', '#475569',
   ];
 
-  const DEFAULT_APPS = [{"id":"chk","name":"Checklists","type":"url","url":"apps/checklist.html","icon":"\u2611","color":"#16a34a","mode":"embed"},{"id":"calc","name":"Wind \u0026 Conv","type":"url","url":"apps/calc.html","icon":"\uD83E\uDDED","color":"#0a9fd6","mode":"embed"},{"id":"windy","name":"Windy","type":"url","url":"https://embed.windy.com/embed2.html?lat=50\u0026lon=5\u0026zoom=5\u0026level=surface\u0026overlay=wind\u0026product=ecmwf\u0026menu=\u0026message=true\u0026marker=\u0026calendar=now\u0026pressure=true\u0026type=map\u0026location=coordinates\u0026detail=\u0026metricWind=kt\u0026metricTemp=%C2%B0C\u0026radarRange=-1","icon":"\uD83C\uDF00","color":"#7c3aed","mode":"embed","embedOk":true}];
+  const DEFAULT_APPS = [{"id":"chk","name":"Checklists","type":"url","url":"apps/checklist.html","icon":"☑","color":"#16a34a","mode":"embed"},{"id":"calc","name":"Wind & Conv","type":"url","url":"apps/calc.html","icon":"🧭","color":"#0a9fd6","mode":"embed"},{"id":"windy","name":"Windy","type":"url","url":"apps/windy.html","icon":"🌀","color":"#7c3aed","mode":"embed","embedOk":true}];
 
   const DEFAULT_SETTINGS = {"simbriefId":"","callsign":"","dim":0,"wake":true,"seconds":false};
 
@@ -108,7 +108,7 @@
     if (!u) return '';
     const host = getPcHost();
     if (host) {
-      u = u.replaceAll('{SIM_PC}', host).replaceAll('192.168.4.37', host);
+      u = u.replaceAll('{SIM_PC}', host);
     } else {
       u = u.replaceAll('{SIM_PC}', 'localhost');
     }
@@ -132,6 +132,11 @@
     localStorage.setItem(LS_APPS, JSON.stringify(apps));
     localStorage.setItem(LS_SETTINGS, JSON.stringify(settings));
     localStorage.setItem(LS_STAMP, String(DEFAULT_STAMP));
+    try {
+      localStorage.removeItem('efb.simbrief.activeFlight');
+      localStorage.removeItem('efb.calc.rwyOverrides.v1');
+      localStorage.removeItem('efb.calc.lastIcao.v1');
+    } catch {}
   }
   const running = new Map();   // appId -> { iframe, blobUrl }
   let activeId = null;
@@ -897,7 +902,7 @@
       await idb.clear();
       for (const [id, file] of Object.entries(data.files || {})) if (file) await idb.set(id, file);
       apps = data.apps.filter((a) => a && a.id && a.name);
-      saveApps(); renderGrid();
+      saveApps(); saveSettings(); renderGrid(); applySettings();
       toast('Apps imported');
     } catch (err) { console.error(err); toast('That is not a valid EFB export file'); }
   });
@@ -906,7 +911,13 @@
     closeAll();
     await idb.clear().catch(() => {});
     apps = clone(DEFAULT_APPS);
-    saveApps(); renderGrid();
+    settings = Object.assign({}, DEFAULT_SETTINGS);
+    try {
+      localStorage.removeItem('efb.simbrief.activeFlight');
+      localStorage.removeItem('efb.calc.rwyOverrides.v1');
+      localStorage.removeItem('efb.calc.lastIcao.v1');
+    } catch {}
+    saveApps(); saveSettings(); renderGrid(); applySettings();
     toast('Reset to defaults');
   });
   function closeAll() { [...running.keys()].forEach(closeApp); goHome(); }

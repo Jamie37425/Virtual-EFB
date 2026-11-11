@@ -457,6 +457,17 @@ $('icao').addEventListener('input', () => {
 
 /* ---------- SimBrief / Navigraph active flight integration ---------- */
 function loadStoredSimbriefFlight() {
+  const simbriefId = getSimbriefId();
+  if (!simbriefId) {
+    try {
+      localStorage.removeItem('efb.simbrief.activeFlight');
+      if (window.parent && window.parent.localStorage) {
+        window.parent.localStorage.removeItem('efb.simbrief.activeFlight');
+      }
+    } catch {}
+    renderSimbriefFlightBar(null);
+    return;
+  }
   let flight = null;
   try {
     const raw = (window.parent && window.parent.localStorage ? window.parent.localStorage.getItem('efb.simbrief.activeFlight') : localStorage.getItem('efb.simbrief.activeFlight'));

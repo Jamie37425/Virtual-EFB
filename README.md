@@ -36,6 +36,23 @@ Virtual EFB runs as a **standalone, full-screen Android tablet application** pai
 
 ---
 
+## When is the PC Companion Server Needed?
+
+The PC server (`Start-EFB.bat` / `Virtual-EFB.exe`) does **not** need to run continuously while you fly:
+* **First-Time Setup**: Used once to download `EFB.apk` to your tablet over local Wi-Fi and establish the initial connection.
+* **Checklist Syncing**: Only needed when you drop new `.pdf` checklist files into your PC's `checklists/` folder and want to sync them to your tablet. Once opened, all checklists are cached permanently on your tablet.
+* **Adding Apps via PC (Localhost)**: Convenient if you prefer typing URLs or configuring custom apps using your PC keyboard at `http://localhost:8080/` to sync them to your tablet.
+* **While Flying**: You can safely close the PC server. The Android tablet runs completely standalone in the cockpit.
+
+> [!WARNING]
+> **Web Browser Limitations vs. Dedicated Android App**
+> While the EFB can be opened in any desktop web browser (`http://localhost:8080/`), **not all features will work in a web browser**:
+> 1. **Blocked Iframe Embedding**: Many popular flight simulation web services (e.g., Navigraph Charts, live VATSIM radars, flight tracking tools) block embedding inside desktop browser iframes via `X-Frame-Options` and `CSP` security headers. The dedicated Android tablet app runs a custom native view that bypasses frame blocking.
+> 2. **CORS Restrictions**: Real-world Digital ATIS (D-ATIS) and certain flight data feeds are blocked by desktop browser cross-origin (CORS) security policies. The Android app includes a native bridge (`EFBNative`) that bypasses CORS restrictions directly.
+> 3. For full functionality, the standalone Android app (**`EFB.apk`**) is strongly recommended.
+
+---
+
 ## Quick Start Guide
 
 ### Step 1: Set Up the PC Sync Server (For Checklists)
@@ -43,9 +60,9 @@ Virtual EFB runs as a **standalone, full-screen Android tablet application** pai
    * Click the green **Code** button at the top of the repository and select **[Download ZIP](../../archive/refs/heads/main.zip)** (or download the **Source code (zip)** from the [Releases](../../releases) tab).
 2. Extract the `.zip` archive anywhere on your PC (e.g., `C:\Virtual-EFB` or in your Documents folder).
 3. Drop your aircraft `.pdf` checklist files into the extracted `checklists/` folder (you can also organize them in subfolders like `checklists/A320/normal.pdf`).
-4. Double-click **`Start-EFB.bat`**:
+4. Double-click **`Start-EFB.bat`** (or **`Virtual-EFB.exe`**):
    * The EFB web interface will open directly in your browser (`http://localhost/`), and the local Wi-Fi sync server will start in the background.
-   * *(Note: The desktop web version is mainly intended to customize your apps, upload custom logo images from your PC files, and view checklists. External flight simulation tools that block iframe embedding require the dedicated Android tablet app).*
+   * *(Note: Always launch using `Start-EFB.bat` or `Virtual-EFB.exe` rather than double-clicking `index.html` directly. The server is only required for initial setup, syncing new checklists from your PC, or configuring apps via localhost—once cached, the PC server does not need to stay running while you fly).*
 
 ### Step 2: Install the App on your Android Tablet (Over Local Wi-Fi)
 1. On your Android tablet, open any web browser (Chrome, Samsung Internet, Firefox).
@@ -108,12 +125,13 @@ The compiled, aligned, and signed `EFB.apk` will be output directly to the root 
 
 ```text
 ├── EFB.apk                 # Pre-built standalone Android app installer
+├── Virtual-EFB.exe         # Companion web server & Wi-Fi sync engine
 ├── Start-EFB.bat           # 1-click launcher for the PC web version & sync server
 ├── preview.jpg             # Application interface preview
 ├── index.html              # EFB launcher UI (bundled inside the Android app)
 ├── css/                    # Cockpit theme styling
 ├── js/                     # EFB app state and local sync engine
-├── apps/                   # Bundled offline utilities (Checklists, Wind Calc)
+├── apps/                   # Bundled utilities (Checklists, Wind Calc, Windy)
 ├── checklists/             # Drop your aircraft PDF checklists here
 ├── android/                # Native Android application source & build scripts
 └── tools/                  # Companion server and background sync utilities

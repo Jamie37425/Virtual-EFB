@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Windy Weather</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #0f172a; color: #94a3b8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    iframe { width: 100%; height: 100%; border: 0; display: block; }
+    .offline { display: none; height: 100%; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+    .offline h2 { color: #f8fafc; margin-bottom: 8px; font-size: 1.25rem; font-weight: 600; }
+    .offline p { max-width: 420px; font-size: 0.95rem; line-height: 1.5; color: #64748b; }
+  </style>
+</head>
+<body>
+  <div id="offline" class="offline">
+    <h2>Windy Requires Internet</h2>
+    <p>Live interactive wind radar maps require an active internet connection. Connect to Wi-Fi to load live radar overlays.</p>
+  </div>
+  <iframe id="wf"
+    src="https://embed.windy.com/embed2.html?lat=50&lon=5&zoom=5&level=surface&overlay=wind&product=ecmwf&menu=&message=true&marker=&calendar=now&pressure=true&type=map&location=coordinates&detail=&metricWind=kt&metricTemp=%C2%B0C&radarRange=-1"
+    allow="geolocation; fullscreen">
+  </iframe>
+  <script>
+    function checkNet() {
+      const online = navigator.onLine;
+      const wf = document.getElementById('wf');
+      const off = document.getElementById('offline');
+      if (wf && off) {
+        wf.style.display = online ? 'block' : 'none';
+        off.style.display = online ? 'none' : 'flex';
+      }
+    }
+    if (!navigator.onLine) checkNet();
+    window.addEventListener('online', () => {
+      checkNet();
+      const wf = document.getElementById('wf');
+      if (wf) wf.src = wf.src;
+    });
+    window.addEventListener('offline', checkNet);
+  </script>
+</body>
+</html>
