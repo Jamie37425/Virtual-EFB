@@ -61,16 +61,16 @@ The PC server (`Start-EFB.bat` / `Virtual-EFB.exe`) does **not** need to run con
 2. Extract the `.zip` archive anywhere on your PC (e.g., `C:\Virtual-EFB` or in your Documents folder).
 3. Drop your aircraft `.pdf` checklist files into the extracted `checklists/` folder (you can also organize them in subfolders like `checklists/A320/normal.pdf`).
 4. Double-click **`Start-EFB.bat`** (or **`Virtual-EFB.exe`**):
-   * The EFB web interface will open directly in your browser (`http://localhost/`), and the local Wi-Fi sync server will start in the background.
+   * The EFB web interface will open directly in your browser (`http://localhost:8080/`), and the local Wi-Fi sync server will start in the background.
    * *(Note: Always launch using `Start-EFB.bat` or `Virtual-EFB.exe` rather than double-clicking `index.html` directly. The server is only required for initial setup, syncing new checklists from your PC, or configuring apps via localhost—once cached, the PC server does not need to stay running while you fly).*
 
 ### Step 2: Install the App on your Android Tablet (Over Local Wi-Fi)
 1. On your Android tablet, open any web browser (Chrome, Samsung Internet, Firefox).
 2. Type your PC's download address directly into the tablet's browser:
    ```text
-   http://<YOUR-PC-IP>/EFB.apk
+   http://<YOUR-PC-IP>:8080/EFB.apk
    ```
-   *(For example, if your PC screen shows `192.168.1.50`, type `http://192.168.1.50/EFB.apk`)*.
+   *(For example, if your PC screen shows `192.168.1.50`, type `http://192.168.1.50:8080/EFB.apk`)*.
 3. Your tablet will immediately pull the installer file directly from your PC!
 4. Open the downloaded file using Android's **Package Installer** and tap **Install**.
    *(If prompted by Android, tap "Allow from this source" or "Install anyway").*
@@ -82,8 +82,6 @@ The PC server (`Start-EFB.bat` / `Virtual-EFB.exe`) does **not** need to run con
 1. In the **EFB** app on your tablet, tap ⚙ **Settings** on the top bar.
 2. Under **Simulator PC Connection**, enter the IP address shown on your PC screen (e.g., `192.168.1.50`) and tap **CONNECT**.
 3. All checklists from your PC's `checklists/` folder will immediately sync to your tablet over your home Wi-Fi!
-
-*(Optional: To run the PC sync server silently in the background on Windows startup, place a shortcut to `tools/start-background-server.vbs` in your Windows Startup folder: press `Win + R`, type `shell:startup`, and paste the shortcut).*
 
 ### Step 4: Link SimBrief (Optional)
 1. Tap ⚙ **Settings** on the top bar.
@@ -133,6 +131,8 @@ The compiled, aligned, and signed `EFB.apk` will be output directly to the root 
 ├── js/                     # EFB app state and local sync engine
 ├── apps/                   # Bundled utilities (Checklists, Wind Calc, Windy)
 ├── checklists/             # Drop your aircraft PDF checklists here
+├── data/                   # Authoritative AIP runway heading corrections
+├── vendor/                 # Bundled runway database & PDF.js library
 ├── android/                # Native Android application source & build scripts
 └── tools/                  # Companion server and background sync utilities
 ```
