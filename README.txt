@@ -1,6 +1,6 @@
 ========================================================================
                      VIRTUAL EFB (Electronic Flight Bag)
-                               Version 1.9
+                               Version 2.0
 ========================================================================
 
 An open-source Electronic Flight Bag designed for flight simulator enthusiasts
