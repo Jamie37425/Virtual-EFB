@@ -109,42 +109,11 @@
     border-radius:8px; padding:8px 14px; font-family:var(--mono); font-size:14px;
     cursor:pointer; display:inline-flex; align-items:center; gap:7px;
   }
-  .rwy-btn .hdg { font-size:11px; color:var(--dim); }
   .rwy-btn.best { border-color:rgba(45,255,110,.55); }
   .rwy-btn.active {
     background:var(--panel2); color:var(--green); border-color:var(--green);
     box-shadow:inset 0 -3px 0 var(--green);
   }
-  .rwy-btn.active .hdg { color:var(--text); }
-  .rwy-btn.has-override .hdg { color:var(--amber); }
-
-  .rwy-hdg-bar {
-    background:var(--bg); border:1px solid var(--line);
-    border-radius:8px; padding:10px 14px; margin-bottom:10px;
-  }
-  .rhb-row { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
-  .rhb-field { display:flex; flex-direction:column; gap:4px; }
-  .rhb-lbl { font-size:10px; letter-spacing:2px; color:var(--dim); font-weight:700; }
-  .rhb-badge {
-    font-family:var(--mono); font-size:14px; font-weight:700; color:var(--green);
-    background:var(--panel2); padding:6px 12px; border-radius:6px; border:1px solid var(--line);
-  }
-  .rhb-input-wrap { display:flex; align-items:center; gap:6px; }
-  .rhb-input-wrap input#customHdg {
-    width:90px; height:36px; padding:0 8px; font-size:18px; font-family:var(--mono);
-    text-align:center; color:var(--cyan); background:var(--panel); border:1px solid var(--line);
-    border-radius:6px;
-  }
-  .rhb-input-wrap input#customHdg:focus { border-color:var(--amber); color:var(--amber); }
-  .rhb-unit { font-family:var(--mono); font-size:12px; color:var(--dim); }
-  .rhb-buttons { display:flex; gap:8px; align-items:center; margin-left:auto; }
-  .btn-rwy-subtle {
-    background:var(--panel); color:var(--cyan); border:1px solid var(--line);
-    border-radius:6px; padding:7px 12px; font-family:var(--font); font-size:10px;
-    letter-spacing:1px; cursor:pointer; font-weight:700;
-  }
-  .btn-rwy-subtle:active { background:var(--panel2); }
-  .rhb-hint { width:100%; font-size:10px; color:var(--dim); letter-spacing:1px; margin-top:2px; }
 
   label { display:flex; flex-direction:column; gap:5px; font-size:10px; letter-spacing:2px; color:var(--dim); }
   input { width:100%; font-family:var(--mono); font-size:22px; color:var(--cyan); background:var(--bg);
@@ -199,26 +168,6 @@
       <div class="rwy-picker" id="rwyPicker" hidden>
         <span class="rp-label" id="rpLabel">SELECT RUNWAY:</span>
         <div id="rwyButtons" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;"></div>
-      </div>
-
-      <div class="rwy-hdg-bar" id="rwyHdgBar" hidden>
-        <div class="rhb-row">
-          <div class="rhb-field">
-            <span class="rhb-lbl">SELECTED RUNWAY</span>
-            <span class="rhb-badge" id="selRwyBadge">—</span>
-          </div>
-          <div class="rhb-field">
-            <label for="customHdg" class="rhb-lbl">RUNWAY HEADING (°MAG)</label>
-            <div class="rhb-input-wrap">
-              <input type="number" id="customHdg" min="1" max="360" placeholder="HDG" />
-              <span class="rhb-unit">°M</span>
-            </div>
-          </div>
-          <div class="rhb-buttons">
-            <button type="button" class="btn-rwy-subtle" id="btnResetHdg" hidden title="Reset heading back to database default">RESET DEFAULT</button>
-          </div>
-          <div class="rhb-hint" id="rhbHint">Editable — changes save automatically for this airport.</div>
-        </div>
       </div>
     </div>
 
@@ -278,24 +227,6 @@ function getOverrides() {
   }
 }
 
-function saveOverride(icao, ident, hdg) {
-  const all = getOverrides();
-  const key = `${icao.toUpperCase()}:${ident.toUpperCase()}`;
-  all[key] = hdg;
-  try {
-    localStorage.setItem(LS_RWY_OVERRIDES, JSON.stringify(all));
-  } catch {}
-}
-
-function removeOverride(icao, ident) {
-  const all = getOverrides();
-  const key = `${icao.toUpperCase()}:${ident.toUpperCase()}`;
-  delete all[key];
-  try {
-    localStorage.setItem(LS_RWY_OVERRIDES, JSON.stringify(all));
-  } catch {}
-}
-
 function getSimbriefId() {
   try {
     const raw = (window.parent && window.parent.localStorage ? window.parent.localStorage.getItem('efb.settings.v1') : localStorage.getItem('efb.settings.v1'));
@@ -318,8 +249,6 @@ function wind() {
   if (matchRwy) selectedRwyIdent = matchRwy.ident;
   $('rwyNum').textContent = matchRwy ? matchRwy.ident : '—';
 
-  updateHdgBar(matchRwy);
-
   const dir = windDir, spd = windSpd, gst = windGst;
   if ([hdg, dir, spd].some(isNaN)) {
     ['hw', 'xw', 'gust'].forEach((i) => ($(i).textContent = '—'));
@@ -339,18 +268,6 @@ function wind() {
   } else $('gust').textContent = '—';
   $('arrow').setAttribute('transform', `rotate(${dir - hdg})`);
   renderRunwayButtons();
-}
-
-function updateHdgBar(rwy) {
-  const bar = $('rwyHdgBar');
-  if (!rwy) {
-    bar.hidden = true;
-    return;
-  }
-  bar.hidden = false;
-  $('selRwyBadge').textContent = 'RWY ' + rwy.ident;
-  $('customHdg').value = isNaN(rwy.hdg) ? '' : rwy.hdg;
-  $('btnResetHdg').hidden = (rwy.hdg === rwy.defaultHdg);
 }
 
 function updateAirportRunways(autoPickBest = false) {
@@ -409,9 +326,8 @@ function renderRunwayButtons() {
     b.type = 'button';
     const isAct = r.ident === selectedRwyIdent;
     const isBest = r.ident === bestIdent;
-    const isOverridden = r.hdg !== r.defaultHdg;
-    b.className = 'rwy-btn' + (isAct ? ' active' : '') + (isBest ? ' best' : '') + (isOverridden ? ' has-override' : '');
-    b.innerHTML = `<span>RWY ${r.ident}</span><span class="hdg">${String(r.hdg).padStart(3, '0')}°</span>`;
+    b.className = 'rwy-btn' + (isAct ? ' active' : '') + (isBest ? ' best' : '');
+    b.textContent = `RWY ${r.ident}`;
     b.onclick = () => {
       selectedRwyIdent = r.ident;
       wind();
@@ -419,35 +335,6 @@ function renderRunwayButtons() {
     wrap.appendChild(b);
   });
 }
-
-// Live runway heading editing
-$('customHdg').addEventListener('input', () => {
-  const code = ($('icao').value || '').trim().toUpperCase();
-  const matchRwy = currentAirportRunways.find((r) => r.ident === selectedRwyIdent);
-  if (!matchRwy || !code) return;
-
-  const val = parseInt($('customHdg').value, 10);
-  if (isNaN(val) || val < 1 || val > 360) return;
-
-  matchRwy.hdg = val;
-  if (val === matchRwy.defaultHdg) {
-    removeOverride(code, matchRwy.ident);
-  } else {
-    saveOverride(code, matchRwy.ident, val);
-  }
-  wind();
-});
-
-$('btnResetHdg').addEventListener('click', () => {
-  const code = ($('icao').value || '').trim().toUpperCase();
-  const matchRwy = currentAirportRunways.find((r) => r.ident === selectedRwyIdent);
-  if (!matchRwy || !code) return;
-
-  removeOverride(code, matchRwy.ident);
-  matchRwy.hdg = matchRwy.defaultHdg;
-  $('customHdg').value = matchRwy.defaultHdg;
-  wind();
-});
 
 $('icao').addEventListener('input', () => {
   const val = ($('icao').value || '').trim().toUpperCase();
