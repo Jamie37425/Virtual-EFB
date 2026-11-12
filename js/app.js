@@ -8,7 +8,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '1.0.0';
+  const VERSION = '2.0.0';
   const NATIVE = !!window.EFBNative;   // true when running inside the EFB Android app
   const DEFAULT_STAMP = 1794700000000;
   const LS_APPS = 'efb.apps.v1';
