@@ -1,0 +1,67 @@
+name: Build EFB APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build and sign EFB.apk
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          BT="$SDK/build-tools/34.0.0"
+          JAR="$SDK/platforms/android-34/android.jar"
+          if [ ! -d "$BT" ] || [ ! -f "$JAR" ]; then
+            echo "Installing Android SDK 34 + build-tools 34.0.0..."
+            yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0" >/dev/null
+          fi
+
+          OUT="android/build"
+          rm -rf "$OUT"
+          mkdir -p "$OUT/assets" "$OUT/classes" "$OUT/res/mipmap-xxhdpi"
+
+          for item in index.html manifest.webmanifest css js icons apps vendor checklists; do
+            if [ -e "$item" ]; then
+              cp -r "$item" "$OUT/assets/$item"
+            fi
+          done
+          cp icons/icon-192.png "$OUT/res/mipmap-xxhdpi/ic_launcher.png"
+
+          "$BT/aapt2" compile --dir "$OUT/res" -o "$OUT/res.zip"
+          "$BT/aapt2" link -o "$OUT/base.apk" -I "$JAR" --manifest android/AndroidManifest.xml \
+            --min-sdk-version 24 --target-sdk-version 34 "$OUT/res.zip"
+
+          find android/src -name "*.java" > "$OUT/sources.txt"
+          javac --release 8 -nowarn -classpath "$JAR" -d "$OUT/classes" @"$OUT/sources.txt"
+          find "$OUT/classes" -name "*.class" > "$OUT/classes.txt"
+          "$BT/d8" --lib "$JAR" --min-api 24 --output "$OUT" @"$OUT/classes.txt"
+
+          (cd "$OUT" && zip -q -r base.apk classes.dex assets)
+
+          KS="android/efb.keystore"
+          if [ ! -f "$KS" ]; then
+            keytool -genkeypair -keystore "$KS" -storepass efbefb123 -keypass efbefb123 \
+              -alias efb -keyalg RSA -keysize 2048 -validity 36500 -dname "CN=EFB"
+          fi
+
+          "$BT/zipalign" -f -p 4 "$OUT/base.apk" "$OUT/aligned.apk"
+          "$BT/apksigner" sign --v4-signing-enabled false --ks "$KS" \
+            --ks-pass pass:efbefb123 --key-pass pass:efbefb123 --out EFB.apk "$OUT/aligned.apk"
+          ls -lh EFB.apk
+
+      - name: Upload EFB.apk artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EFB-apk
+          path: EFB.apk

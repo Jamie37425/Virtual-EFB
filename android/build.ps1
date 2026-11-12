@@ -51,5 +51,5 @@ if (-not (Test-Path $ks)) {
   & $keytool -genkeypair -keystore $ks -storepass efbefb123 -keypass efbefb123 -alias efb -keyalg RSA -keysize 2048 -validity 36500 -dname 'CN=EFB' | Out-Null
 }
 & "$bt\zipalign.exe" -f -p 4 "$out\base.apk" "$out\aligned.apk"
-& "$bt\apksigner.bat" sign --ks $ks --ks-pass pass:efbefb123 --key-pass pass:efbefb123 --out (Join-Path $proj 'EFB.apk') "$out\aligned.apk"
+& "$bt\apksigner.bat" sign --v4-signing-enabled false --ks $ks --ks-pass pass:efbefb123 --key-pass pass:efbefb123 --out (Join-Path $proj 'EFB.apk') "$out\aligned.apk"
 Write-Host "Built: $(Join-Path $proj 'EFB.apk')  ($([math]::Round((Get-Item (Join-Path $proj 'EFB.apk')).Length/1MB,1)) MB)"
