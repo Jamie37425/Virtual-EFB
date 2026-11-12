@@ -180,14 +180,14 @@
         <text id="rwyNum" y="76" text-anchor="middle" fill="#e6f1ff" font-size="13" font-family="B612 Mono"></text>
         <g id="windArrows" visibility="hidden">
           <g id="hwGroup">
-            <line id="hwShaft" x1="-45" y1="-30" x2="-45" y2="20" stroke="#2dff6e" stroke-width="5" stroke-linecap="square" />
-            <polygon id="hwHead" points="-45,30 -54,14 -36,14" fill="#2dff6e" />
-            <text id="hwNum" x="-45" y="48" text-anchor="middle" fill="#2dff6e" font-size="16" font-weight="700" font-family="B612 Mono">0</text>
+            <line id="hwShaft" x1="-64" y1="-24" x2="-64" y2="6" stroke="#2dff6e" stroke-width="3.5" stroke-linecap="square" />
+            <polygon id="hwHead" points="-64,14 -70,4 -58,4" fill="#2dff6e" />
+            <text id="hwNum" x="-64" y="30" text-anchor="middle" fill="#2dff6e" font-size="13" font-weight="700" font-family="B612 Mono">0</text>
           </g>
           <g id="xwGroup">
-            <line id="xwShaft" x1="-45" y1="-30" x2="10" y2="-30" stroke="#2dff6e" stroke-width="5" stroke-linecap="square" />
-            <polygon id="xwHead" points="20,-30 4,-39 4,-21" fill="#2dff6e" />
-            <text id="xwNum" x="34" y="-25" text-anchor="middle" fill="#2dff6e" font-size="16" font-weight="700" font-family="B612 Mono">0</text>
+            <line id="xwShaft" x1="-64" y1="-24" x2="-40" y2="-24" stroke="#2dff6e" stroke-width="3.5" stroke-linecap="square" />
+            <polygon id="xwHead" points="-32,-24 -42,-30 -42,-18" fill="#2dff6e" />
+            <text id="xwNum" x="-22" y="-20" text-anchor="middle" fill="#2dff6e" font-size="13" font-weight="700" font-family="B612 Mono">0</text>
           </g>
         </g>
       </svg>
@@ -280,8 +280,8 @@ function wind() {
   const xwAbs = Math.round(Math.abs(xw));
   const isTailwind = hw < -0.5;
   const fromRight = xw > 0;
-  const cx = fromRight ? 45 : -45;
-  const cy = isTailwind ? 30 : -30;
+  const cx = fromRight ? 64 : -64;
+  const cy = isTailwind ? 24 : -24;
   const hwColor = isTailwind ? '#ff4d5e' : '#2dff6e';
   const xwColor = Math.abs(xw) >= 20 ? '#ff4d5e' : '#2dff6e';
 
@@ -290,11 +290,11 @@ function wind() {
   // Vertical Headwind / Tailwind arrow
   $('hwGroup').setAttribute('visibility', hwAbs === 0 ? 'hidden' : 'visible');
   if (hwAbs > 0) {
-    const tipY = isTailwind ? -30 : 30;
-    const shaftEndY = isTailwind ? -20 : 20;
+    const tipY = isTailwind ? -14 : 14;
+    const shaftEndY = isTailwind ? -6 : 6;
     const basePts = isTailwind
-      ? `${cx},${tipY} ${cx - 9},${tipY + 16} ${cx + 9},${tipY + 16}`
-      : `${cx},${tipY} ${cx - 9},${tipY - 16} ${cx + 9},${tipY - 16}`;
+      ? `${cx},${tipY} ${cx - 6},${tipY + 10} ${cx + 6},${tipY + 10}`
+      : `${cx},${tipY} ${cx - 6},${tipY - 10} ${cx + 6},${tipY - 10}`;
     $('hwShaft').setAttribute('x1', cx);
     $('hwShaft').setAttribute('y1', cy);
     $('hwShaft').setAttribute('x2', cx);
@@ -303,7 +303,7 @@ function wind() {
     $('hwHead').setAttribute('points', basePts);
     $('hwHead').setAttribute('fill', hwColor);
     $('hwNum').setAttribute('x', cx);
-    $('hwNum').setAttribute('y', isTailwind ? -38 : 48);
+    $('hwNum').setAttribute('y', isTailwind ? -22 : 30);
     $('hwNum').setAttribute('fill', hwColor);
     $('hwNum').textContent = hwAbs;
   }
@@ -311,11 +311,11 @@ function wind() {
   // Horizontal Crosswind arrow
   $('xwGroup').setAttribute('visibility', xwAbs === 0 ? 'hidden' : 'visible');
   if (xwAbs > 0) {
-    const tipX = fromRight ? -20 : 20;
-    const shaftEndX = fromRight ? -10 : 10;
+    const tipX = fromRight ? 32 : -32;
+    const shaftEndX = fromRight ? 40 : -40;
     const xwPts = fromRight
-      ? `${tipX},${cy} ${tipX + 16},${cy - 9} ${tipX + 16},${cy + 9}`
-      : `${tipX},${cy} ${tipX - 16},${cy - 9} ${tipX - 16},${cy + 9}`;
+      ? `${tipX},${cy} ${tipX + 10},${cy - 6} ${tipX + 10},${cy + 6}`
+      : `${tipX},${cy} ${tipX - 10},${cy - 6} ${tipX - 10},${cy + 6}`;
     $('xwShaft').setAttribute('x1', cx);
     $('xwShaft').setAttribute('y1', cy);
     $('xwShaft').setAttribute('x2', shaftEndX);
@@ -323,8 +323,8 @@ function wind() {
     $('xwShaft').setAttribute('stroke', xwColor);
     $('xwHead').setAttribute('points', xwPts);
     $('xwHead').setAttribute('fill', xwColor);
-    $('xwNum').setAttribute('x', fromRight ? -34 : 34);
-    $('xwNum').setAttribute('y', cy + 5);
+    $('xwNum').setAttribute('x', fromRight ? 22 : -22);
+    $('xwNum').setAttribute('y', cy + 4);
     $('xwNum').setAttribute('fill', xwColor);
     $('xwNum').textContent = xwAbs;
   }
