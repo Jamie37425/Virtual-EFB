@@ -109,6 +109,7 @@ class VirtualEfbServer {
             Process.Start(desktopUrl);
         } catch {}
 
+        SyncChecklistFolder();
         ThreadPool.QueueUserWorkItem(ListenLoop);
 
         while (running) {
@@ -332,6 +333,9 @@ class VirtualEfbServer {
 
                     // Static file serving
                     if (string.IsNullOrEmpty(path)) path = "index.html";
+                    if (path.Equals("checklists/index.json", StringComparison.OrdinalIgnoreCase)) {
+                        SyncChecklistFolder();
+                    }
                     string fullPath = Path.GetFullPath(Path.Combine(rootDir, path));
 
                     if (!fullPath.StartsWith(rootDir, StringComparison.OrdinalIgnoreCase) || !File.Exists(fullPath)) {
@@ -368,6 +372,80 @@ class VirtualEfbServer {
             }
             stream.Flush();
         } catch {}
+    }
+
+    static readonly object checklistLock = new object();
+
+    static string JsonEscape(string s) {
+        if (string.IsNullOrEmpty(s)) return "";
+        return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ");
+    }
+
+    static string JsonUnescape(string s) {
+        if (string.IsNullOrEmpty(s)) return "";
+        return s.Replace("\\\"", "\"").Replace("\\\\", "\\");
+    }
+
+    static void SyncChecklistFolder() {
+        lock (checklistLock) {
+            try {
+                string chkDir = Path.Combine(rootDir, "checklists");
+                if (!Directory.Exists(chkDir)) Directory.CreateDirectory(chkDir);
+                string idxPath = Path.Combine(chkDir, "index.json");
+
+                var diskFiles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (string f in Directory.GetFiles(chkDir, "*.pdf")) {
+                    string name = Path.GetFileName(f);
+                    diskFiles[name] = name;
+                }
+
+                var entries = new List<string>();
+                var seenFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                string existingRaw = File.Exists(idxPath) ? File.ReadAllText(idxPath, Encoding.UTF8) : "[]";
+                foreach (Match obj in Regex.Matches(existingRaw, @"\{[^{}]*\}")) {
+                    string block = obj.Value;
+                    var mId = Regex.Match(block, @"""id""\s*:\s*""((?:\\.|[^""\\])*)""");
+                    var mAc = Regex.Match(block, @"""aircraft""\s*:\s*""((?:\\.|[^""\\])*)""");
+                    var mTitle = Regex.Match(block, @"""title""\s*:\s*""((?:\\.|[^""\\])*)""");
+                    var mFile = Regex.Match(block, @"""file""\s*:\s*""((?:\\.|[^""\\])*)""");
+                    if (!mFile.Success) continue;
+
+                    string fileVal = JsonUnescape(mFile.Groups[1].Value);
+                    string fileName = Path.GetFileName(fileVal.Replace('/', Path.DirectorySeparatorChar));
+                    if (!diskFiles.ContainsKey(fileName) || seenFiles.Contains(fileName)) continue;
+
+                    seenFiles.Add(fileName);
+                    string id = mId.Success ? JsonUnescape(mId.Groups[1].Value) : ("pdf_" + Regex.Replace(fileName.ToLower(), @"[^a-z0-9]+", "_").Trim('_'));
+                    string ac = mAc.Success ? JsonUnescape(mAc.Groups[1].Value) : "OTHER";
+                    string title = mTitle.Success ? JsonUnescape(mTitle.Groups[1].Value) : Path.GetFileNameWithoutExtension(fileName);
+                    string exactName = diskFiles[fileName];
+
+                    entries.Add("{\"id\":\"" + JsonEscape(id) + "\",\"aircraft\":\"" + JsonEscape(ac) + "\",\"title\":\"" + JsonEscape(title) + "\",\"file\":\"../checklists/" + JsonEscape(exactName) + "\"}");
+                }
+
+                var sortedDisk = new List<string>(diskFiles.Values);
+                sortedDisk.Sort(StringComparer.OrdinalIgnoreCase);
+                foreach (string fileName in sortedDisk) {
+                    if (seenFiles.Contains(fileName)) continue;
+                    seenFiles.Add(fileName);
+                    string baseName = Path.GetFileNameWithoutExtension(fileName);
+                    string id = "pdf_" + Regex.Replace(fileName.ToLower(), @"[^a-z0-9]+", "_").Trim('_');
+                    var mAc = Regex.Match(baseName, @"^([A-Za-z0-9]+(?:-\d+)?)\b");
+                    string ac = mAc.Success ? mAc.Groups[1].Value.ToUpper() : "OTHER";
+                    string title = Regex.Replace(baseName, @"[-_]+", " ");
+                    title = Regex.Replace(title, @"\s+", " ").Trim();
+                    if (string.IsNullOrEmpty(title)) title = baseName;
+
+                    entries.Add("{\"id\":\"" + JsonEscape(id) + "\",\"aircraft\":\"" + JsonEscape(ac) + "\",\"title\":\"" + JsonEscape(title) + "\",\"file\":\"../checklists/" + JsonEscape(fileName) + "\"}");
+                }
+
+                string newJson = entries.Count == 0 ? "[]" : "[\r\n  " + string.Join(",\r\n  ", entries.ToArray()) + "\r\n]";
+                if (!File.Exists(idxPath) || existingRaw.Trim() != newJson.Trim()) {
+                    File.WriteAllText(idxPath, newJson, new UTF8Encoding(false));
+                }
+            } catch {}
+        }
     }
 }
 
