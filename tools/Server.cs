@@ -223,18 +223,7 @@ class VirtualEfbServer {
                     // API: state (two-way sync between Tablet App & PC Web Version)
                     if (method == "GET" && path == "api/state") {
                         try {
-                            string appJsPath = Path.Combine(rootDir, "js", "app.js");
-                            string js = File.Exists(appJsPath) ? File.ReadAllText(appJsPath, Encoding.UTF8) : "";
-                            string stamp = "0";
-                            var mStamp = Regex.Match(js, @"const DEFAULT_STAMP = (\d+);");
-                            if (mStamp.Success) stamp = mStamp.Groups[1].Value;
-                            string appsRaw = "[]";
-                            var mApps = Regex.Match(js, @"(?s)const DEFAULT_APPS = (\[.*?\]);");
-                            if (mApps.Success) appsRaw = mApps.Groups[1].Value;
-                            string setRaw = "{}";
-                            var mSet = Regex.Match(js, @"const DEFAULT_SETTINGS = (\{.*?\});");
-                            if (mSet.Success) setRaw = mSet.Groups[1].Value;
-                            string stateJson = "{\"stamp\":" + stamp + ",\"apps\":" + appsRaw + ",\"settings\":" + setRaw + "}";
+                            string stateJson = ReadOrSeedStateJson();
                             byte[] b = Encoding.UTF8.GetBytes(stateJson);
                             SendResponse(stream, 200, "OK", "application/json; charset=utf-8", b);
                         } catch {
@@ -246,24 +235,8 @@ class VirtualEfbServer {
                     // API: sync-defaults
                     if (method == "POST" && path == "api/sync-defaults") {
                         try {
-                            string appJsPath = Path.Combine(rootDir, "js", "app.js");
-                            if (File.Exists(appJsPath)) {
-                                string js = File.ReadAllText(appJsPath, Encoding.UTF8);
-                                var matchStamp = Regex.Match(body, "\"stamp\"\\s*:\\s*(\\d+)");
-                                if (matchStamp.Success) {
-                                    js = Regex.Replace(js, @"const DEFAULT_STAMP = \d+;", "const DEFAULT_STAMP = " + matchStamp.Groups[1].Value + ";");
-                                }
-                                var matchApps = Regex.Match(body, "\"apps\"\\s*:\\s*(\\[.*?\\])(,\\s*\"settings\"|\\})", RegexOptions.Singleline);
-                                if (matchApps.Success) {
-                                    js = Regex.Replace(js, @"(?s)const DEFAULT_APPS = \[.*?\];", "const DEFAULT_APPS = " + matchApps.Groups[1].Value + ";");
-                                }
-                                var matchSet = Regex.Match(body, "\"settings\"\\s*:\\s*(\\{.*?\\})\\s*\\}", RegexOptions.Singleline);
-                                if (matchSet.Success) {
-                                    js = Regex.Replace(js, @"const DEFAULT_SETTINGS = \{.*?\};", "const DEFAULT_SETTINGS = " + matchSet.Groups[1].Value + ";");
-                                }
-                                File.WriteAllText(appJsPath, js, Encoding.UTF8);
-                            }
-                            byte[] ok = Encoding.UTF8.GetBytes("{\"ok\":true}");
+                            string respJson = SaveStateJson(body);
+                            byte[] ok = Encoding.UTF8.GetBytes(respJson);
                             SendResponse(stream, 200, "OK", "application/json; charset=utf-8", ok);
                         } catch {
                             SendResponse(stream, 500, "Internal Server Error", "text/plain", new byte[0]);
@@ -377,6 +350,61 @@ class VirtualEfbServer {
             }
             stream.Flush();
         } catch {}
+    }
+
+    static readonly object stateLock = new object();
+
+    static string ReadOrSeedStateJson() {
+        lock (stateLock) {
+            string dataDir = Path.Combine(rootDir, "data");
+            if (!Directory.Exists(dataDir)) Directory.CreateDirectory(dataDir);
+            string statePath = Path.Combine(dataDir, "state.json");
+            if (File.Exists(statePath)) {
+                string raw = File.ReadAllText(statePath, Encoding.UTF8).Trim();
+                if (raw.StartsWith("{") && raw.Contains("\"apps\"")) return raw;
+            }
+            string appJsPath = Path.Combine(rootDir, "js", "app.js");
+            string js = File.Exists(appJsPath) ? File.ReadAllText(appJsPath, Encoding.UTF8) : "";
+            string stamp = "0";
+            var mStamp = Regex.Match(js, @"const DEFAULT_STAMP = (\d+);");
+            if (mStamp.Success) stamp = mStamp.Groups[1].Value;
+            string appsRaw = "[]";
+            var mApps = Regex.Match(js, @"(?s)const DEFAULT_APPS = (\[.*?\]);");
+            if (mApps.Success) appsRaw = mApps.Groups[1].Value;
+            string setRaw = "{}";
+            var mSet = Regex.Match(js, @"const DEFAULT_SETTINGS = (\{.*?\});");
+            if (mSet.Success) setRaw = mSet.Groups[1].Value;
+            string seeded = "{\"stamp\":" + stamp + ",\"apps\":" + appsRaw + ",\"settings\":" + setRaw + "}";
+            File.WriteAllText(statePath, seeded, new UTF8Encoding(false));
+            return seeded;
+        }
+    }
+
+    static string SaveStateJson(string body) {
+        lock (stateLock) {
+            if (string.IsNullOrEmpty(body) || !body.TrimStart().StartsWith("{") || !body.Contains("\"apps\"")) {
+                return "{\"ok\":false,\"error\":\"invalid payload\"}";
+            }
+            string currentRaw = ReadOrSeedStateJson();
+            long currentStamp = 0;
+            var mCur = Regex.Match(currentRaw, @"""stamp""\s*:\s*(\d+)");
+            if (mCur.Success) long.TryParse(mCur.Groups[1].Value, out currentStamp);
+
+            long incomingStamp = 0;
+            var mIn = Regex.Match(body, @"""stamp""\s*:\s*(\d+)");
+            if (mIn.Success) long.TryParse(mIn.Groups[1].Value, out incomingStamp);
+            bool force = Regex.IsMatch(body, @"""force""\s*:\s*true");
+
+            if (!force && incomingStamp < currentStamp) {
+                return "{\"ok\":true,\"ignored\":true,\"stamp\":" + currentStamp + "}";
+            }
+
+            string dataDir = Path.Combine(rootDir, "data");
+            if (!Directory.Exists(dataDir)) Directory.CreateDirectory(dataDir);
+            string statePath = Path.Combine(dataDir, "state.json");
+            File.WriteAllText(statePath, body.Trim(), new UTF8Encoding(false));
+            return "{\"ok\":true,\"stamp\":" + incomingStamp + "}";
+        }
     }
 
     static readonly object checklistLock = new object();

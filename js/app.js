@@ -10,10 +10,11 @@
 
   const VERSION = '2.1.0';
   const NATIVE = !!window.EFBNative;   // true when running inside the EFB Android app
-  const DEFAULT_STAMP = 1794760000000;
+  const DEFAULT_STAMP = 1794585000000;
   const LS_APPS = 'efb.apps.v1';
   const LS_SETTINGS = 'efb.settings.v1';
   const LS_STAMP = 'efb.stamp.v1';
+  const LS_DIRTY = 'efb.dirty.v1';
 
   const COLORS = [
     '#0a9fd6', '#2563eb', '#1e3a8a', '#0d9488', '#16a34a',
@@ -137,6 +138,7 @@
     localStorage.setItem(LS_APPS, JSON.stringify(apps));
     localStorage.setItem(LS_SETTINGS, JSON.stringify(settings));
     localStorage.setItem(LS_STAMP, String(DEFAULT_STAMP));
+    localStorage.removeItem(LS_DIRTY);
     try {
       localStorage.removeItem('efb.simbrief.activeFlight');
       localStorage.removeItem('efb.calc.rwyOverrides.v1');
@@ -148,17 +150,20 @@
   let editing = false;
   let lastHomeAt = 0;
 
-  const saveApps = () => {
-    const now = Date.now();
+  const nextSyncStamp = () => Math.max(Date.now(), +(localStorage.getItem(LS_STAMP) || 0) + 1, DEFAULT_STAMP + 1);
+  const saveApps = (force = false) => {
+    const now = nextSyncStamp();
     localStorage.setItem(LS_STAMP, String(now));
+    localStorage.setItem(LS_DIRTY, '1');
     localStorage.setItem(LS_APPS, JSON.stringify(apps));
-    syncDefaultsToDisk(now);
+    syncDefaultsToDisk(now, force);
   };
-  const saveSettings = () => {
-    const now = Date.now();
+  const saveSettings = (force = false) => {
+    const now = nextSyncStamp();
     localStorage.setItem(LS_STAMP, String(now));
+    localStorage.setItem(LS_DIRTY, '1');
     localStorage.setItem(LS_SETTINGS, JSON.stringify(settings));
-    syncDefaultsToDisk(now);
+    syncDefaultsToDisk(now, force);
   };
   const findApp = (id) => apps.find((a) => a.id === id);
 
@@ -169,13 +174,30 @@
     return base ? `${base}/${path}` : path;
   };
 
-  function syncDefaultsToDisk(stamp = Date.now()) {
+  function syncDefaultsToDisk(stamp = nextSyncStamp(), force = false) {
     if (!location.protocol.startsWith('http') && !PC_SERVER()) return;
     localStorage.setItem(LS_STAMP, String(stamp));
     fetch(apiUrl('api/sync-defaults'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stamp, apps, settings }),
+      body: JSON.stringify({ stamp, force: !!force, apps, settings }),
+    }).then(async (r) => {
+      if (!r.ok) return;
+      try {
+        const res = await r.json();
+        if (res && res.stamp) {
+          const appliedStamp = +(res.stamp || 0);
+          const curStamp = +(localStorage.getItem(LS_STAMP) || 0);
+          if (appliedStamp >= curStamp) {
+            localStorage.setItem(LS_STAMP, String(appliedStamp));
+            localStorage.removeItem(LS_DIRTY);
+          }
+        } else {
+          localStorage.removeItem(LS_DIRTY);
+        }
+      } catch {
+        localStorage.removeItem(LS_DIRTY);
+      }
     }).catch(() => {});
   }
 
@@ -190,15 +212,17 @@
       if (!remote || !Array.isArray(remote.apps)) return;
       const localStamp = +(localStorage.getItem(LS_STAMP) || 0);
       const remoteStamp = +(remote.stamp || 0);
-      if (remoteStamp > localStamp) {
+      const isDirty = localStorage.getItem(LS_DIRTY) === '1';
+      if (remoteStamp > localStamp || (!isDirty && remoteStamp > 0 && JSON.stringify(remote.apps) !== JSON.stringify(apps))) {
         apps = remote.apps;
         if (remote.settings) settings = Object.assign({}, DEFAULT_SETTINGS, remote.settings);
         localStorage.setItem(LS_APPS, JSON.stringify(apps));
         localStorage.setItem(LS_SETTINGS, JSON.stringify(settings));
-        localStorage.setItem(LS_STAMP, String(remoteStamp));
+        localStorage.setItem(LS_STAMP, String(Math.max(remoteStamp, localStamp)));
+        localStorage.removeItem(LS_DIRTY);
         applySettings();
         renderGrid();
-      } else if (localStamp > remoteStamp) {
+      } else if (isDirty && localStamp > remoteStamp) {
         syncDefaultsToDisk(localStamp);
       }
     } catch {} finally {
@@ -919,7 +943,7 @@
       await idb.clear();
       for (const [id, file] of Object.entries(data.files || {})) if (file) await idb.set(id, file);
       apps = data.apps.filter((a) => a && a.id && a.name);
-      saveApps(); saveSettings(); renderGrid(); applySettings();
+      saveApps(true); saveSettings(true); renderGrid(); applySettings();
       toast('Apps imported');
     } catch (err) { console.error(err); toast('That is not a valid EFB export file'); }
   });
@@ -934,7 +958,7 @@
       localStorage.removeItem('efb.calc.rwyOverrides.v1');
       localStorage.removeItem('efb.calc.lastIcao.v1');
     } catch {}
-    saveApps(); saveSettings(); renderGrid(); applySettings();
+    saveApps(true); saveSettings(true); renderGrid(); applySettings();
     toast('Reset to defaults');
   });
   function closeAll() { [...running.keys()].forEach(closeApp); goHome(); }
