@@ -25,7 +25,7 @@ Virtual EFB runs as a **standalone, full-screen Android tablet application** pai
 
 ### 📋 Interactive Checklists & Local Wi-Fi Sync
 * **Built-in PDF Viewer**: Render multi-page aircraft procedures and checklists with night-mode inverted reading and auto-fit scaling.
-* **Two-Way Local Wi-Fi Sync**: Drop `.pdf` checklists into the PC's `checklists/` folder and they automatically sync to the tablet over Wi-Fi.
+* **Two-Way Local Wi-Fi Sync**: Drop `.pdf` checklists directly into the PC's `checklists/` folder and `Virtual-EFB.exe` automatically indexes and syncs them to both `localhost:8088` and your tablet over Wi-Fi.
 * **Offline Caching**: All opened checklists are cached permanently on the tablet—fly even when your PC is turned off.
 * **Direct Import**: Add PDFs directly from your tablet storage via the `+ ADD CHECKLIST` file picker.
 
@@ -59,7 +59,7 @@ The PC server (`Start-EFB.bat` / `Virtual-EFB.exe`) does **not** need to run con
 1. Download this project onto your simulator PC:
    * Click the green **Code** button at the top of the repository and select **[Download ZIP](../../archive/refs/heads/main.zip)** (or download the **Source code (zip)** from the [Releases](../../releases) tab).
 2. Extract the `.zip` archive anywhere on your PC (e.g., `C:\Virtual-EFB` or in your Documents folder).
-3. Drop your aircraft `.pdf` checklist files into the extracted `checklists/` folder (you can also organize them in subfolders like `checklists/A320/normal.pdf`).
+3. Drop your aircraft `.pdf` checklist files directly into the extracted `checklists/` folder (they are indexed automatically).
 4. Double-click **`Start-EFB.bat`** (or **`Virtual-EFB.exe`**):
    * The EFB web interface will open directly in your browser (`http://localhost:8088/`), and the local Wi-Fi sync server will start in the background.
    * *(Note: Always launch using `Start-EFB.bat` or `Virtual-EFB.exe` rather than double-clicking `index.html` directly. The server is only required for initial setup, syncing new checklists from your PC, or configuring apps via localhost—once cached, the PC server does not need to stay running while you fly).*
@@ -80,7 +80,7 @@ The PC server (`Start-EFB.bat` / `Virtual-EFB.exe`) does **not** need to run con
 
 ### Step 3: Connect Tablet to PC (One-Time Setup)
 1. In the **EFB** app on your tablet, tap ⚙ **Settings** on the top bar.
-2. Under **Simulator PC Connection**, enter the IP address shown on your PC screen (e.g., `192.168.1.50`) and tap **CONNECT**.
+2. Under **Simulator PC Connection**, enter the IP:Port shown on your PC screen (e.g., `192.168.1.50:8088` — or just the IP, which defaults to `:8088`) and tap **CONNECT**.
 3. All checklists from your PC's `checklists/` folder will immediately sync to your tablet over your home Wi-Fi!
 
 ### Step 4: Link SimBrief (Optional)

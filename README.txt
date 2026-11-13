@@ -1,6 +1,6 @@
 ========================================================================
                      VIRTUAL EFB (Electronic Flight Bag)
-                               Version 2.0
+                               Version 2.1
 ========================================================================
 
 An open-source Electronic Flight Bag designed for flight simulator enthusiasts
@@ -18,8 +18,8 @@ STEP 1: SET UP THE PC COMPANION SERVER (For Checklists & Desktop EFB)
 ------------------------------------------------------------------------
 1. Extract this zip archive on your flight simulator PC (e.g. C:\Virtual-EFB
    or in your Documents folder).
-2. Drop your aircraft .pdf checklist files into the "checklists" folder
-   (you can also organize them in subfolders like checklists\A320\normal.pdf).
+2. Drop your aircraft .pdf checklist files directly into the "checklists" folder
+   (they are indexed automatically when the server starts or syncs).
 3. Double-click "Virtual-EFB.exe" (or "Start-EFB.bat"):
    - A clean console window will open showing your PC's local Wi-Fi IP address.
    - Your desktop web browser will open automatically to http://localhost:8088/
@@ -43,8 +43,8 @@ STEP 2: INSTALL ON YOUR ANDROID TABLET (Over Local Wi-Fi)
 STEP 3: CONNECT TABLET TO PC (One-Time Setup)
 ------------------------------------------------------------------------
 1. In the EFB app on your tablet, tap the Settings (gear) icon on the top bar.
-2. Under "SIMULATOR PC CONNECTION", enter your PC's IP address (e.g. 192.168.1.50)
-   and tap CONNECT.
+2. Under "SIMULATOR PC CONNECTION", enter your PC's IP:8088 (e.g. 192.168.1.50:8088,
+   or just the IP which defaults to :8088) and tap CONNECT.
 3. All checklists from your PC will sync immediately over Wi-Fi!
 
 
