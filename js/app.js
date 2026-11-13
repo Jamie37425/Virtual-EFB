@@ -179,98 +179,13 @@
     }).catch(() => {});
   }
 
-  let lastScanAt = 0;
-  let scanningPort = null;
-
-  function firstSuccess(promises) {
-    return new Promise((resolve, reject) => {
-      let remaining = promises.length;
-      if (!remaining) { reject(new Error('none')); return; }
-      promises.forEach((p) => {
-        Promise.resolve(p).then(resolve, () => {
-          if (--remaining === 0) reject(new Error('all failed'));
-        });
-      });
-    });
-  }
-
-  async function probePort(host, port, ms = 1200) {
-    const ctl = new AbortController();
-    const tm = setTimeout(() => ctl.abort(), ms);
-    try {
-      const r = await fetch(`http://${host}:${port}/api/info?t=${Date.now()}`, { signal: ctl.signal, cache: 'no-store' });
-      clearTimeout(tm);
-      if (!r.ok) throw new Error('not ok');
-      const info = await r.json();
-      if (!info || !info.ok || (info.app && info.app !== 'VirtualEFB')) throw new Error('not VirtualEFB');
-      return { port: info.port || port, info };
-    } catch (e) {
-      clearTimeout(tm);
-      throw e;
-    }
-  }
-
-  async function discoverPcPort(force = false) {
-    if (scanningPort) return scanningPort;
-    const base = getPcBase();
-    if (!base) return null;
-    if (!NATIVE && (location.hostname === 'localhost' || location.hostname === '127.0.0.1')) return base;
-    let parsed;
-    try { parsed = new URL(base); } catch { return null; }
-    const host = parsed.hostname;
-    const savedPort = +(parsed.port || 8088);
-    if (!force && Date.now() - lastScanAt < 20000) return null;
-    lastScanAt = Date.now();
-
-    scanningPort = (async () => {
-      try {
-        const hit = await probePort(host, savedPort, 1200).catch(() => null);
-        if (hit) return `http://${host}:${hit.port}`;
-
-        const batch1 = [];
-        for (let p = 8088; p <= 8097; p++) {
-          if (p !== savedPort) batch1.push(probePort(host, p, 1200));
-        }
-        let found = await firstSuccess(batch1).catch(() => null);
-        if (!found) {
-          const batch2 = [];
-          for (let p = 8098; p <= 8107; p++) {
-            if (p !== savedPort) batch2.push(probePort(host, p, 1200));
-          }
-          found = await firstSuccess(batch2).catch(() => null);
-        }
-        if (found) {
-          const newBase = `http://${host}:${found.port}`;
-          localStorage.setItem('efb.pcBase', newBase);
-          if ($('sPcIp') && document.activeElement !== $('sPcIp')) {
-            $('sPcIp').value = `${host}:${found.port}`;
-          }
-          if (found.port !== savedPort) {
-            toast(`Reconnected to PC on port ${found.port}`);
-          }
-          return newBase;
-        }
-      } finally {
-        scanningPort = null;
-      }
-      return null;
-    })();
-    return scanningPort;
-  }
-  window.efbDiscoverPc = () => discoverPcPort(true);
-
   let syncingState = false;
   async function syncWithServer() {
     if ((!location.protocol.startsWith('http') && !PC_SERVER()) || syncingState || editing) return;
     syncingState = true;
     try {
-      let r = await fetch(apiUrl('api/state?t=' + Date.now()), { cache: 'no-store' }).catch(() => null);
-      if (!r || !r.ok) {
-        const rediscovered = await discoverPcPort(false);
-        if (!rediscovered) return;
-        r = await fetch(`${rediscovered}/api/state?t=${Date.now()}`, { cache: 'no-store' }).catch(() => null);
-        if (!r || !r.ok) return;
-      }
+      const r = await fetch(apiUrl('api/state?t=' + Date.now()), { cache: 'no-store' });
+      if (!r.ok) return;
       const remote = await r.json();
       if (!remote || !Array.isArray(remote.apps)) return;
       const localStamp = +(localStorage.getItem(LS_STAMP) || 0);
@@ -837,14 +752,6 @@
         }
       } catch {}
       clearTimeout(tm);
-      const rediscovered = await discoverPcPort(true);
-      if (rediscovered) {
-        const cleanAddr = rediscovered.replace(/^https?:\/\//i, '');
-        statusEl.style.color = '';
-        statusEl.innerHTML = `<span style="color:var(--green)">✓ Auto-connected to Sim PC (${cleanAddr})</span>`;
-        syncWithServer();
-        return;
-      }
       statusEl.style.color = '';
       statusEl.innerHTML = `<span style="color:var(--amber)">Saved ${currentVal} (PC not responding - verify Start-EFB.bat is running on PC)</span>`;
     } else {

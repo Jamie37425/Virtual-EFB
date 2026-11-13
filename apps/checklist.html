@@ -692,22 +692,12 @@
   async function syncFolderChecklists() {
     try {
       let res = null, fromPc = false;
-      let pc = getPcBase();
+      const pc = getPcBase();
       if (pc) {
         try {
           res = await fetchTimeout(pc + '/checklists/index.json?t=' + Date.now(), { cache: 'no-store' }, 2500);
           fromPc = !!(res && res.ok);
         } catch { res = null; }
-        if (!fromPc && window.parent && typeof window.parent.efbDiscoverPc === 'function') {
-          const rediscovered = await window.parent.efbDiscoverPc().catch(() => null);
-          if (rediscovered && rediscovered !== pc) {
-            pc = rediscovered;
-            try {
-              res = await fetchTimeout(pc + '/checklists/index.json?t=' + Date.now(), { cache: 'no-store' }, 2500);
-              fromPc = !!(res && res.ok);
-            } catch { res = null; }
-          }
-        }
       }
       if (res && res.ok) {
         const raw = await res.json();

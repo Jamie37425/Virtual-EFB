@@ -51,25 +51,30 @@ class VirtualEfbServer {
 
         string localIp = GetLocalIp();
 
-        int preferredPort = port;
-        bool started = false;
-        Exception lastEx = null;
-
-        for (int offset = 0; offset < 20; offset++) {
+        try {
+            server = new TcpListener(IPAddress.Any, port);
+            server.Start();
+        } catch (SocketException ex) {
+            bool alreadyRunning = false;
             try {
-                port = preferredPort + offset;
-                server = new TcpListener(IPAddress.Any, port);
-                server.Start();
-                started = true;
-                break;
-            } catch (SocketException ex) {
-                lastEx = ex;
-            }
-        }
+                using (var wc = new WebClient()) {
+                    string info = wc.DownloadString("http://127.0.0.1:" + port + "/api/info");
+                    if (info.Contains("VirtualEFB")) alreadyRunning = true;
+                }
+            } catch {}
 
-        if (!started) {
+            if (alreadyRunning) {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("Virtual EFB Companion Server is already running on Port " + port + ".");
+                Console.ResetColor();
+                Console.WriteLine("Opening http://localhost:" + port + "/ in your browser...");
+                try { Process.Start("http://localhost:" + port + "/"); } catch {}
+                Thread.Sleep(1500);
+                return;
+            }
+
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Could not start server on Port " + preferredPort + ": " + (lastEx != null ? lastEx.Message : "Port unavailable"));
+            Console.WriteLine("Could not start server on Port " + port + ": " + ex.Message);
             Console.ResetColor();
             Console.WriteLine("Press any key to exit...");
             try { Console.ReadKey(); } catch {}
