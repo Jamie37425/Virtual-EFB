@@ -85,6 +85,8 @@
     letter-spacing:1px; background:var(--green); color:var(--bg);
   }
   .atis-src.real { background:var(--amber); color:var(--bg); }
+  .atis-src.stale { background:#ff3b3b; color:#fff; }
+  .atis-time { font-size:10px; color:var(--dim); letter-spacing:1px; }
   .atis-tabs { display:flex; gap:6px; flex-wrap:wrap; }
   .atis-tab {
     background:var(--panel); color:var(--dim); border:1px solid var(--line);
@@ -622,7 +624,32 @@ fetch('../vendor/runways.json')
   });
 
 /* ---------- live VATSIM ATIS first, fallback to real-life D-ATIS (atis.guru) ---------- */
-function classifyAtisItem(rawText, callsign = '', infoCode = '', freq = '') {
+function getAtisAgeInfo(rawText, subtitleText = '') {
+  let zuluTime = '';
+  let zuluAge = null;
+  const zm = rawText.match(/\b([01]\d|2[0-3])([0-5]\d)Z\b/);
+  if (zm) {
+    zuluTime = `${zm[1]}${zm[2]}Z`;
+    const now = new Date();
+    const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
+    const atisMin = parseInt(zm[1], 10) * 60 + parseInt(zm[2], 10);
+    zuluAge = atisMin > nowMin + 5 ? (nowMin + 1440 - atisMin) : Math.max(0, nowMin - atisMin);
+  }
+  let subAge = null;
+  if (subtitleText) {
+    const sm = subtitleText.match(/(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})\s*UTC/i);
+    if (sm) {
+      const ts = Date.parse(`${sm[1]}T${sm[2]}:00Z`);
+      if (!isNaN(ts)) subAge = Math.max(0, Math.round((Date.now() - ts) / 60000));
+    }
+  }
+  const ageMins = (zuluAge !== null && subAge !== null)
+    ? Math.max(zuluAge, subAge)
+    : (zuluAge !== null ? zuluAge : subAge);
+  return { zuluTime, ageMins };
+}
+
+function classifyAtisItem(rawText, callsign = '', infoCode = '', freq = '', subtitleText = '') {
   const lines = rawText.split(/\n+/).map((l) => l.trim()).filter(Boolean);
   let body;
   if (lines.length > 1 && /^[A-Z0-9]{4}\s+(ARR|DEP|COM)?\s*ATIS\b/i.test(lines[0])) {
@@ -641,11 +668,14 @@ function classifyAtisItem(rawText, callsign = '', infoCode = '', freq = '') {
     if (m) letter = m[1].toUpperCase();
   }
 
+  const { zuluTime, ageMins } = getAtisAgeInfo(rawText, subtitleText);
   const label = letter ? `${type} (${letter})` : type;
   const prefix = [callsign, freq ? `${freq}` : ''].filter(Boolean).join(' · ');
   return {
     type,
     label,
+    zuluTime,
+    ageMins,
     text: prefix ? `${prefix} — ${body}` : body,
   };
 }
@@ -675,10 +705,17 @@ function parseAtisGuruHtml(html) {
       els.push(...tpl.content.querySelectorAll('div.atis'));
     });
     const blocks = els
-      .map((el) => el.textContent.replace(/\r/g, '').replace(/[ \t]+\n/g, '\n').trim())
-      .filter((t) => t && !/^(METAR|TAF)\b/i.test(t));
+      .map((el) => {
+        const text = el.textContent.replace(/\r/g, '').replace(/[ \t]+\n/g, '\n').trim();
+        const card = el.closest('.card-body');
+        const sub = card ? (card.querySelector('.card-subtitle')?.textContent || '').trim() : '';
+        return { text, sub };
+      })
+      .filter((b) => b.text && !/^(METAR|TAF)\b/i.test(b.text));
     if (blocks.length) {
-      return blocks.map((b) => classifyAtisItem(b));
+      return blocks
+        .map((b) => classifyAtisItem(b.text, '', '', '', b.sub))
+        .filter((item) => item.ageMins === null || item.ageMins <= 360);
     }
   } catch {}
   return [];
@@ -754,6 +791,21 @@ function renderAtisResult(result) {
   badge.className = 'atis-src' + (result.source === 'real' ? ' real' : '');
   badge.textContent = result.source === 'vatsim' ? 'VATSIM ATIS' : 'REAL D-ATIS (NO VATSIM ATIS)';
   head.appendChild(badge);
+
+  const active = result.items[currentAtisTab];
+  if (result.source === 'real' && active.ageMins !== null && active.ageMins >= 120) {
+    const hrs = Math.floor(active.ageMins / 60);
+    const staleBadge = document.createElement('span');
+    staleBadge.className = 'atis-src stale';
+    staleBadge.textContent = `STALE (${hrs}h OLD — MAY NOT MATCH METAR)`;
+    head.appendChild(staleBadge);
+  }
+  if (active.zuluTime) {
+    const timeEl = document.createElement('span');
+    timeEl.className = 'atis-time';
+    timeEl.textContent = active.zuluTime;
+    head.appendChild(timeEl);
+  }
 
   const tabs = document.createElement('div');
   tabs.className = 'atis-tabs';
