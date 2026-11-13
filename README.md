@@ -2,7 +2,7 @@
 
 An open-source Electronic Flight Bag designed for flight simulator enthusiasts (Microsoft Flight Simulator, X-Plane, Prepar3D).
 
-Virtual EFB runs as a **standalone, full-screen Android tablet application** paired with a lightweight **PC companion server** that automatically syncs your aircraft `.pdf` checklists over your local home Wi-Fi.
+Virtual EFB runs as a **standalone, full-screen Android tablet application** paired with a lightweight **PC companion server** that automatically syncs your custom apps, settings, and aircraft `.pdf` checklists two-way over your local home Wi-Fi.
 
 ![Virtual EFB Interface](preview.jpg)
 
@@ -41,7 +41,7 @@ Virtual EFB runs as a **standalone, full-screen Android tablet application** pai
 The PC server (`Start-EFB.bat` / `Virtual-EFB.exe`) does **not** need to run continuously while you fly:
 * **First-Time Setup**: Used once to download `EFB.apk` to your tablet over local Wi-Fi and establish the initial connection.
 * **Checklist Syncing**: Only needed when you drop new `.pdf` checklist files into your PC's `checklists/` folder and want to sync them to your tablet. Once opened, all checklists are cached permanently on your tablet.
-* **Adding Apps via PC (Localhost)**: Convenient if you prefer typing URLs or configuring custom apps using your PC keyboard at `http://localhost:8088/` to sync them to your tablet.
+* **Two-Way App & Settings Sync**: Add, edit, reorder, or remove custom apps—or update SimBrief/display settings—on either your PC (`http://localhost:8088/`) or your tablet, and changes persist across refreshes and sync automatically when connected (`data/state.json`).
 * **While Flying**: You can safely close the PC server. The Android tablet runs completely standalone in the cockpit.
 
 > [!WARNING]
@@ -93,11 +93,12 @@ The PC server (`Start-EFB.bat` / `Virtual-EFB.exe`) does **not** need to run con
 
 ## Adding & Customizing Apps
 
-Tap **+ ADD APP** on the top bar of your tablet:
+Tap **+ ADD APP** on the top bar of either your tablet or PC (`http://localhost:8088/`):
 * **Web Address**: Enter any flight simulation URL (e.g., Navigraph Charts, VATSIM Radar, Windy, SimBrief, SkyVector).
 * **HTML File**: Select any single-file HTML web utility saved on your device.
 * **Custom Icons**: Choose from 10 cockpit highlight colors and custom letter/emoji icons or upload an image.
 * **Reorder & Edit**: Long-press any tile (or tap **EDIT**) to move, reconfigure, or delete tiles.
+* **Two-Way Sync**: Changes made on either your PC or your tablet are saved on your PC (`data/state.json`) and automatically sync across refreshes and devices.
 
 ---
 
@@ -131,7 +132,7 @@ The compiled, aligned, and signed `EFB.apk` will be output directly to the root 
 ├── js/                     # EFB app state and local sync engine
 ├── apps/                   # Bundled utilities (Checklists, Wind Calc, Windy)
 ├── checklists/             # Drop your aircraft PDF checklists here
-├── data/                   # Authoritative AIP runway heading corrections
+├── data/                   # Runway heading corrections & synced app/settings state (state.json)
 ├── vendor/                 # Bundled runway database & PDF.js library
 ├── android/                # Native Android application source & build scripts
 └── tools/                  # Companion server and background sync utilities
