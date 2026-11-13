@@ -191,7 +191,7 @@ class VirtualEfbServer {
 
                     // API: info
                     if (method == "GET" && path == "api/info") {
-                        byte[] b = Encoding.UTF8.GetBytes("{\"ok\":true,\"ip\":\"" + GetLocalIp() + "\",\"port\":" + port + "}");
+                        byte[] b = Encoding.UTF8.GetBytes("{\"ok\":true,\"app\":\"VirtualEFB\",\"ip\":\"" + GetLocalIp() + "\",\"port\":" + port + "}");
                         SendResponse(stream, 200, "OK", "application/json; charset=utf-8", b);
                         return;
                     }

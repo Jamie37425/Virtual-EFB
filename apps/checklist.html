@@ -294,7 +294,9 @@
       base = (localStorage.getItem('efb.pcBase') || (window.parent && window.parent.localStorage && window.parent.localStorage.getItem('efb.pcBase')) || '').trim();
     } catch {}
     if (base) {
-      return /^https?:\/\//i.test(base) ? base.replace(/\/$/, '') : `http://${base}`.replace(/\/$/, '');
+      let url = /^https?:\/\//i.test(base) ? base.replace(/\/$/, '') : `http://${base}`.replace(/\/$/, '');
+      if (!/:\d+$/.test(url)) url += ':8088';
+      return url;
     }
     if (!IN_APP && location.protocol.startsWith('http')) {
       return location.origin;
@@ -690,12 +692,22 @@
   async function syncFolderChecklists() {
     try {
       let res = null, fromPc = false;
-      const pc = getPcBase();
+      let pc = getPcBase();
       if (pc) {
         try {
           res = await fetchTimeout(pc + '/checklists/index.json?t=' + Date.now(), { cache: 'no-store' }, 2500);
           fromPc = !!(res && res.ok);
         } catch { res = null; }
+        if (!fromPc && window.parent && typeof window.parent.efbDiscoverPc === 'function') {
+          const rediscovered = await window.parent.efbDiscoverPc().catch(() => null);
+          if (rediscovered && rediscovered !== pc) {
+            pc = rediscovered;
+            try {
+              res = await fetchTimeout(pc + '/checklists/index.json?t=' + Date.now(), { cache: 'no-store' }, 2500);
+              fromPc = !!(res && res.ok);
+            } catch { res = null; }
+          }
+        }
       }
       if (res && res.ok) {
         const raw = await res.json();
