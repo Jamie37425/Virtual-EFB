@@ -1,4 +1,4 @@
-﻿# Virtual EFB (Electronic Flight Bag)
+# Virtual EFB (Electronic Flight Bag)
 
 An open-source Electronic Flight Bag designed for flight simulator enthusiasts (Microsoft Flight Simulator, X-Plane, Prepar3D).
 
@@ -41,12 +41,12 @@ Virtual EFB runs as a **standalone, full-screen Android tablet application** pai
 The PC server (`Start-EFB.bat` / `Virtual-EFB.exe`) does **not** need to run continuously while you fly:
 * **First-Time Setup**: Used once to download `EFB.apk` to your tablet over local Wi-Fi and establish the initial connection.
 * **Checklist Syncing**: Only needed when you drop new `.pdf` checklist files into your PC's `checklists/` folder and want to sync them to your tablet. Once opened, all checklists are cached permanently on your tablet.
-* **Adding Apps via PC (Localhost)**: Convenient if you prefer typing URLs or configuring custom apps using your PC keyboard at `http://localhost:8080/` to sync them to your tablet.
+* **Adding Apps via PC (Localhost)**: Convenient if you prefer typing URLs or configuring custom apps using your PC keyboard at `http://localhost:8088/` to sync them to your tablet.
 * **While Flying**: You can safely close the PC server. The Android tablet runs completely standalone in the cockpit.
 
 > [!WARNING]
 > **Web Browser Limitations vs. Dedicated Android App**
-> While the EFB can be opened in any desktop web browser (`http://localhost:8080/`), **not all features will work in a web browser**:
+> While the EFB can be opened in any desktop web browser (`http://localhost:8088/`), **not all features will work in a web browser**:
 > 1. **Blocked Iframe Embedding**: Many popular flight simulation web services (e.g., Navigraph Charts, live VATSIM radars, flight tracking tools) block embedding inside desktop browser iframes via `X-Frame-Options` and `CSP` security headers. The dedicated Android tablet app runs a custom native view that bypasses frame blocking.
 > 2. **CORS Restrictions**: Real-world Digital ATIS (D-ATIS) and certain flight data feeds are blocked by desktop browser cross-origin (CORS) security policies. The Android app includes a native bridge (`EFBNative`) that bypasses CORS restrictions directly.
 > 3. For full functionality, the standalone Android app (**`EFB.apk`**) is strongly recommended.
@@ -61,16 +61,16 @@ The PC server (`Start-EFB.bat` / `Virtual-EFB.exe`) does **not** need to run con
 2. Extract the `.zip` archive anywhere on your PC (e.g., `C:\Virtual-EFB` or in your Documents folder).
 3. Drop your aircraft `.pdf` checklist files into the extracted `checklists/` folder (you can also organize them in subfolders like `checklists/A320/normal.pdf`).
 4. Double-click **`Start-EFB.bat`** (or **`Virtual-EFB.exe`**):
-   * The EFB web interface will open directly in your browser (`http://localhost:8080/`), and the local Wi-Fi sync server will start in the background.
+   * The EFB web interface will open directly in your browser (`http://localhost:8088/`), and the local Wi-Fi sync server will start in the background.
    * *(Note: Always launch using `Start-EFB.bat` or `Virtual-EFB.exe` rather than double-clicking `index.html` directly. The server is only required for initial setup, syncing new checklists from your PC, or configuring apps via localhost—once cached, the PC server does not need to stay running while you fly).*
 
 ### Step 2: Install the App on your Android Tablet (Over Local Wi-Fi)
 1. On your Android tablet, open any web browser (Chrome, Samsung Internet, Firefox).
 2. Type your PC's download address directly into the tablet's browser:
    ```text
-   http://<YOUR-PC-IP>:8080/EFB.apk
+   http://<YOUR-PC-IP>:8088/EFB.apk
    ```
-   *(For example, if your PC screen shows `192.168.1.50`, type `http://192.168.1.50:8080/EFB.apk`)*.
+   *(For example, if your PC screen shows `192.168.1.50`, type `http://192.168.1.50:8088/EFB.apk`)*.
 3. Your tablet will immediately pull the installer file directly from your PC!
 4. Open the downloaded file using Android's **Package Installer** and tap **Install**.
    *(If prompted by Android, tap "Allow from this source" or "Install anyway").*

@@ -22,7 +22,7 @@ STEP 1: SET UP THE PC COMPANION SERVER (For Checklists & Desktop EFB)
    (you can also organize them in subfolders like checklists\A320\normal.pdf).
 3. Double-click "Virtual-EFB.exe" (or "Start-EFB.bat"):
    - A clean console window will open showing your PC's local Wi-Fi IP address.
-   - Your desktop web browser will open automatically to http://localhost:8080/
+   - Your desktop web browser will open automatically to http://localhost:8088/
    - Note: The server is only required during initial setup, when syncing new
      checklists from your PC, or when managing apps from localhost. Once cached,
      you do NOT need to keep the server running while flying.
@@ -32,8 +32,8 @@ STEP 2: INSTALL ON YOUR ANDROID TABLET (Over Local Wi-Fi)
 ------------------------------------------------------------------------
 1. On your Android tablet, open any web browser (Chrome, Samsung Internet, Firefox).
 2. Type your PC's download address directly into your tablet's browser:
-      http://<YOUR-PC-IP>:8080/EFB.apk
-   (For example, if your PC shows 192.168.1.50, type http://192.168.1.50:8080/EFB.apk)
+      http://<YOUR-PC-IP>:8088/EFB.apk
+   (For example, if your PC shows 192.168.1.50, type http://192.168.1.50:8088/EFB.apk)
 3. Your tablet will immediately download EFB.apk directly from your PC!
 4. Tap the downloaded file to install it.
    (If prompted by Android, tap "Allow from this source" or "Install anyway").
@@ -82,7 +82,7 @@ The PC companion server does NOT need to run continuously while flying:
   PC's "checklists" folder and want to sync them to your tablet. Once
   opened, checklists are cached permanently on the tablet.
 - Adding Apps via Localhost: Useful if you prefer adding apps or URLs via
-  your PC keyboard at http://localhost:8080/ to sync them to your tablet.
+  your PC keyboard at http://localhost:8088/ to sync them to your tablet.
 - While Flying: You can close Virtual-EFB.exe. The Android tablet runs
   completely standalone in the cockpit.
 
@@ -90,7 +90,7 @@ The PC companion server does NOT need to run continuously while flying:
        WEB BROWSER LIMITATIONS (DESKTOP BROWSER vs. ANDROID APP)
 ========================================================================
 
-While you can open the EFB on your PC browser (http://localhost:8080/),
+While you can open the EFB on your PC browser (http://localhost:8088/),
 please note that NOT ALL FEATURES will work in a standard web browser:
 1. Blocked Embeds: Many flight simulation tools (such as Navigraph
    Charts, VATSIM radar, and live web tools) block embedding inside

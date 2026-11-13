@@ -286,6 +286,9 @@
      and fall back to the copies bundled inside the app when the PC isn't reachable. */
   const IN_APP = !!(window.parent && window.parent.EFBNative);
   function getPcBase() {
+    if (!IN_APP && (location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+      return location.origin;
+    }
     let base = '';
     try {
       base = (localStorage.getItem('efb.pcBase') || (window.parent && window.parent.localStorage && window.parent.localStorage.getItem('efb.pcBase')) || '').trim();

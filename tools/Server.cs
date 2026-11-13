@@ -12,7 +12,7 @@ class VirtualEfbServer {
     static TcpListener server;
     static string rootDir;
     static bool running = true;
-    static int port = 8080;
+    static int port = 8088;
 
     static readonly Dictionary<string, string> MimeTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
         { ".html", "text/html; charset=utf-8" },
@@ -47,16 +47,29 @@ class VirtualEfbServer {
         ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
 
         if (args.Length > 0) int.TryParse(args[0], out port);
-        if (port <= 0) port = 8080;
+        if (port <= 0) port = 8088;
 
         string localIp = GetLocalIp();
 
-        try {
-            server = new TcpListener(IPAddress.Any, port);
-            server.Start();
-        } catch (Exception ex) {
+        int preferredPort = port;
+        bool started = false;
+        Exception lastEx = null;
+
+        for (int offset = 0; offset < 20; offset++) {
+            try {
+                port = preferredPort + offset;
+                server = new TcpListener(IPAddress.Any, port);
+                server.Start();
+                started = true;
+                break;
+            } catch (SocketException ex) {
+                lastEx = ex;
+            }
+        }
+
+        if (!started) {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Could not start server on Port " + port + ": " + ex.Message);
+            Console.WriteLine("Could not start server on Port " + preferredPort + ": " + (lastEx != null ? lastEx.Message : "Port unavailable"));
             Console.ResetColor();
             Console.WriteLine("Press any key to exit...");
             try { Console.ReadKey(); } catch {}

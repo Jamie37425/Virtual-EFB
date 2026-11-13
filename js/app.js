@@ -8,9 +8,9 @@
 (() => {
   'use strict';
 
-  const VERSION = '2.0.0';
+  const VERSION = '2.1.0';
   const NATIVE = !!window.EFBNative;   // true when running inside the EFB Android app
-  const DEFAULT_STAMP = 1794700000000;
+  const DEFAULT_STAMP = 1794760000000;
   const LS_APPS = 'efb.apps.v1';
   const LS_SETTINGS = 'efb.settings.v1';
   const LS_STAMP = 'efb.stamp.v1';
@@ -85,6 +85,9 @@
   }
   function getPcBase() {
     let custom = (localStorage.getItem('efb.pcBase') || '').trim();
+    if (!NATIVE && (location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+      return location.origin;
+    }
     if (custom) {
       return /^https?:\/\//i.test(custom) ? custom.replace(/\/$/, '') : `http://${custom}`.replace(/\/$/, '');
     }
