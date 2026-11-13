@@ -31,7 +31,7 @@ Virtual EFB runs as a **standalone, full-screen Android tablet application** pai
 
 ### 🧭 Wind Components, METAR & Live D-ATIS
 * **Runway Wind Vectors**: Enter an ICAO airport code to load runways, calculate headwind, tailwind, and crosswind components, and highlight the optimal runway.
-* **Live VATSIM & Real-World D-ATIS**: Automatically pulls digital ATIS from active VATSIM controllers. When no controller is online, it falls back to real-world Digital ATIS (both Arrival and Departure ATIS) using a native Android bridge that bypasses CORS restrictions.
+* **Live VATSIM & Real-World D-ATIS**: Automatically pulls digital ATIS from active VATSIM controllers. When no controller is online, it falls back to real-world Digital ATIS (both Arrival and Departure ATIS) using a native Android bridge that bypasses CORS restrictions. Displays the ATIS issue time, flags 2–6 hour old reports as stale, and hides cached D-ATIS older than 6 hours so it does not conflict with live METARs.
 * **Conversion Tools**: Instant conversions for Fuel (KG, LBS, US Gal, Litres), Weight, Pressure (hPa ↔ inHg), and Distance/Speed.
 
 ---
