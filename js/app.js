@@ -89,7 +89,9 @@
       return location.origin;
     }
     if (custom) {
-      return /^https?:\/\//i.test(custom) ? custom.replace(/\/$/, '') : `http://${custom}`.replace(/\/$/, '');
+      let url = /^https?:\/\//i.test(custom) ? custom.replace(/\/$/, '') : `http://${custom}`.replace(/\/$/, '');
+      if (!/:\d+$/.test(url)) url += ':8088';
+      return url;
     }
     if (!NATIVE && location.protocol.startsWith('http')) {
       return location.origin;
@@ -709,18 +711,23 @@
         if (r.ok) {
           const info = await r.json();
           if (info && info.ip) {
-            statusEl.innerHTML = `<span style="color:var(--green)">✓ PC Server Active · Local IP: <b>${info.ip}</b></span> (Enter this IP on your tablet to sync)`;
-            if (!ipInput.value) ipInput.value = info.ip;
+            const addr = info.port && info.port !== 80 ? `${info.ip}:${info.port}` : info.ip;
+            statusEl.innerHTML = `<span style="color:var(--green)">✓ PC Server Active · Local IP: <b>${addr}</b></span> (Enter this on your tablet to sync)`;
+            if (!ipInput.value) ipInput.value = addr;
             return;
           }
         }
       } catch {}
     }
 
-    const currentVal = ipInput.value.trim().replace(/^https?:\/\//i, '').replace(/\/$/, '');
+    let currentVal = ipInput.value.trim().replace(/^https?:\/\//i, '').replace(/\/$/, '');
     if (!currentVal) {
-      statusEl.textContent = 'Enter the IP shown on your PC screen (http://localhost) so this tablet syncs checklists.';
+      statusEl.textContent = 'Enter the IP:Port shown on your PC screen (e.g. 192.168.x.x:8088) so this tablet syncs.';
       return;
+    }
+    if (!/:\d+$/.test(currentVal)) {
+      currentVal += ':8088';
+      ipInput.value = currentVal;
     }
 
     if (test) {
@@ -743,7 +750,7 @@
       } catch {}
       clearTimeout(tm);
       statusEl.style.color = '';
-      statusEl.innerHTML = `<span style="color:var(--amber)">Saved ${currentVal} (PC not responding - verify serve.ps1 is running on PC)</span>`;
+      statusEl.innerHTML = `<span style="color:var(--amber)">Saved ${currentVal} (PC not responding - verify Start-EFB.bat is running on PC)</span>`;
     } else {
       statusEl.innerHTML = `Configured: <b>${currentVal}</b> · Tap CONNECT to test`;
     }
@@ -751,12 +758,16 @@
 
   if ($('btnConnectPc')) {
     $('btnConnectPc').addEventListener('click', () => {
-      const val = $('sPcIp').value.trim().replace(/^https?:\/\//i, '').replace(/\/$/, '');
+      let val = $('sPcIp').value.trim().replace(/^https?:\/\//i, '').replace(/\/$/, '');
       if (!val) {
         localStorage.removeItem('efb.pcBase');
         $('pcIpStatus').textContent = 'Disconnected. Enter your Sim PC IP to reconnect.';
         toast('PC connection cleared');
         return;
+      }
+      if (!/:\d+$/.test(val)) {
+        val += ':8088';
+        $('sPcIp').value = val;
       }
       localStorage.setItem('efb.pcBase', 'http://' + val);
       updatePcConnectionUI(true);
@@ -995,7 +1006,8 @@
       .then((r) => r.json())
       .then((info) => {
         if (info && info.ip && $('btnServerIpPill')) {
-          $('btnServerIpPill').textContent = 'SYNC IP: ' + info.ip;
+          const addr = info.port && info.port !== 80 ? `${info.ip}:${info.port}` : info.ip;
+          $('btnServerIpPill').textContent = 'SYNC IP: ' + addr;
           $('btnServerIpPill').hidden = false;
           $('btnServerIpPill').onclick = () => $('btnSettings').click();
         }

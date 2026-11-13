@@ -214,6 +214,29 @@ class VirtualEfbServer {
                         return;
                     }
 
+                    // API: state (two-way sync between Tablet App & PC Web Version)
+                    if (method == "GET" && path == "api/state") {
+                        try {
+                            string appJsPath = Path.Combine(rootDir, "js", "app.js");
+                            string js = File.Exists(appJsPath) ? File.ReadAllText(appJsPath, Encoding.UTF8) : "";
+                            string stamp = "0";
+                            var mStamp = Regex.Match(js, @"const DEFAULT_STAMP = (\d+);");
+                            if (mStamp.Success) stamp = mStamp.Groups[1].Value;
+                            string appsRaw = "[]";
+                            var mApps = Regex.Match(js, @"(?s)const DEFAULT_APPS = (\[.*?\]);");
+                            if (mApps.Success) appsRaw = mApps.Groups[1].Value;
+                            string setRaw = "{}";
+                            var mSet = Regex.Match(js, @"const DEFAULT_SETTINGS = (\{.*?\});");
+                            if (mSet.Success) setRaw = mSet.Groups[1].Value;
+                            string stateJson = "{\"stamp\":" + stamp + ",\"apps\":" + appsRaw + ",\"settings\":" + setRaw + "}";
+                            byte[] b = Encoding.UTF8.GetBytes(stateJson);
+                            SendResponse(stream, 200, "OK", "application/json; charset=utf-8", b);
+                        } catch {
+                            SendResponse(stream, 500, "Internal Server Error", "text/plain", new byte[0]);
+                        }
+                        return;
+                    }
+
                     // API: sync-defaults
                     if (method == "POST" && path == "api/sync-defaults") {
                         try {
