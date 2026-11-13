@@ -762,10 +762,59 @@ async function fetchAtisGuru(code) {
   return [];
 }
 
+function parseFaaDatisJson(raw) {
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr) || !arr.length) return [];
+    return arr
+      .filter((d) => d && d.datis && !d.error)
+      .map((d) => {
+        const item = classifyAtisItem(d.datis, '', d.code || '', '');
+        const t = d.type === 'arr' ? 'ARR ATIS' : (d.type === 'dep' ? 'DEP ATIS' : item.type);
+        const letter = (d.code || '').toUpperCase();
+        item.type = t;
+        item.label = letter ? `${t} (${letter})` : t;
+        return item;
+      });
+  } catch {
+    return [];
+  }
+}
+
+async function fetchFaaDatis(code) {
+  if (!/^[KP][A-Z0-9]{3}$/.test(code)) return [];
+  const targetUrl = `https://datis.clowd.io/api/${encodeURIComponent(code)}`;
+
+  if (window.parent && window.parent.EFBNative && typeof window.parent.EFBNative.fetchUrl === 'function') {
+    try {
+      const parsed = parseFaaDatisJson(window.parent.EFBNative.fetchUrl(targetUrl));
+      if (parsed.length > 0) return parsed;
+    } catch {}
+  }
+
+  const urls = [
+    targetUrl,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+  ];
+  for (const u of urls) {
+    try {
+      const r = await fetch(u, { cache: 'no-store' });
+      if (!r.ok) continue;
+      const parsed = parseFaaDatisJson(await r.text());
+      if (parsed.length > 0) return parsed;
+    } catch {}
+  }
+  return [];
+}
+
 async function fetchBestAtis(code) {
   const vatsimItems = await fetchVatsimAtis(code);
   if (vatsimItems.length > 0) {
     return { source: 'vatsim', items: vatsimItems };
+  }
+  const faaItems = await fetchFaaDatis(code);
+  if (faaItems.length > 0) {
+    return { source: 'real', items: faaItems };
   }
   const realItems = await fetchAtisGuru(code);
   if (realItems.length > 0) {
